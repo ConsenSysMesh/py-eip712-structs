@@ -1,4 +1,4 @@
-from eip712 import Address, EIP712Struct, String
+from eip712 import Address, Array, EIP712Struct, Int, String, Uint
 
 
 def test_empty_struct():
@@ -12,8 +12,10 @@ def test_simple_struct():
     class Person(EIP712Struct):
         name = String()
         addr = Address()
+        numbers = Array(Int(256))
+        moreNumbers = Array(Uint(256), 8)
 
-    expected_result = 'Person(string name,address addr)'
+    expected_result = 'Person(string name,address addr,int256[] numbers,uint256[8] moreNumbers)'
     assert Person.encode_type() == expected_result
 
 

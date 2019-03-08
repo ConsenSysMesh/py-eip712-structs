@@ -93,7 +93,10 @@ array_member = Array(<item_type>[, <optional_length>])
 
 For example:
 ```python
-dynamic_array = Array(X())     # X[] dynamic_array
-static_array = Array(X(), 10)  # X[10] static_array
+dynamic_array = Array(X())      # X[] dynamic_array
+static_array  = Array(X(), 10)  # X[10] static_array
 ```
 
+## Development
+Run tests:
+- `pytest tests`

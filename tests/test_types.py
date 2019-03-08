@@ -29,7 +29,7 @@ def run_int_test(clazz, base_name):
 
     for n in [-8, 0, 264]:
         with pytest.raises(ValueError):
-            clazz(0)
+            clazz(n)
 
 
 def test_int_validation():
@@ -38,3 +38,13 @@ def test_int_validation():
 
 def test_uint_validation():
     run_int_test(Uint, 'uint')
+
+
+def test_arrays():
+    assert Array(String()).type_name == 'string[]'
+    assert Array(String(), 4).type_name == 'string[4]'
+
+    assert Array(Bytes(17)).type_name == 'bytes17[]'
+    assert Array(Bytes(17), 10).type_name == 'bytes17[10]'
+
+    assert Array(Array(Uint(160))).type_name == 'uint160[][]'
