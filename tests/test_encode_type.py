@@ -31,6 +31,16 @@ def test_struct_with_reference():
     assert Mail.encode_type() == expected_result
 
 
+def test_self_reference():
+    class Person(EIP712Struct):
+        name = String()
+
+    Person.parent = Person
+
+    expected_result = 'Person(string name,Person parent)'
+    assert Person.encode_type() == expected_result
+
+
 def test_nested_reference():
     class C(EIP712Struct):
         s = String()
@@ -95,4 +105,3 @@ def test_circular_reference():
     assert A.encode_type() == expected_result_a
     assert B.encode_type() == expected_result_b
     assert C.encode_type() == expected_result_c
-
