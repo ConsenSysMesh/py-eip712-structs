@@ -1,6 +1,8 @@
 from collections import OrderedDict
 from typing import List, Tuple
 
+from eth_utils.crypto import keccak
+
 from eip712.types import EIP712Type
 
 
@@ -18,10 +20,23 @@ class _EIP712StructHelper(EIP712Type, metaclass=OrderedAttributesMeta):
 
 
 class EIP712Struct(_EIP712StructHelper):
-    def __init__(self):
+    def __init__(self, **kwargs):
         super(EIP712Struct, self).__init__(self.type_name)
-        # This method will instantiate data from kwargs
-        pass
+        members = self.get_members()
+        self.values = dict()
+        for name, _ in members:
+            self.values[name] = kwargs.get(name)
+
+    def encode_value(self, value=None):
+        encoded_values = [typ.encode_value(self.values[name]) for name, typ in self.get_members()]
+        return b''.join(encoded_values)
+
+    def get_data_value(self, name):
+        return self.values.get(name)
+
+    def set_data_value(self, name, value):
+        if name in self.values:
+            self.values[name] = value
 
     @classmethod
     def _encode_type(cls, resolve_references: bool) -> str:
@@ -47,6 +62,10 @@ class EIP712Struct(_EIP712StructHelper):
     @classmethod
     def encode_type(cls):
         return cls._encode_type(True)
+
+    @classmethod
+    def type_hash(cls):
+        return keccak(text=cls.encode_type())
 
     @classmethod
     def get_members(cls) -> List[Tuple[str, EIP712Type]]:
