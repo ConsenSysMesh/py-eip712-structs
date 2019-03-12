@@ -1,11 +1,17 @@
 # EIP-712 Structs
 
-"Structs" in here have nothing to do with the python module "struct".
+A python interface for simple EIP-712 struct construction.
+
+In this module, a "struct" is structured data as defined in the standard.
+It is not the same as the Python Standard Library's struct (e.g., `import struct`).
+
+Read the proposal:<br/>
+https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
 
 ## Basic Usage
 
 Our desired struct:
-```javascript
+```
 struct Message {
     address to;
     string contents;
@@ -20,13 +26,17 @@ class Message(EIP712Struct):
     to = Address()
     contents = String()
     
-Message.encode_type()  # 'Mail(address to,string contents)'
+enctyp = Message.encode_type()  # 'Mail(address to,string contents)'
+
+msg = Message(to='0xdead...beef', contents='hello world')
+msg.encode_value()  # The struct's data in encoded form
+
 ```
 
 #### A gotcha
 The order attributes are declared matters! That order is preserved.
 
-As an example, the following two structs are NOT the same.
+For example, the following two structs are NOT the same.
 
 ```python
 class Foo(EIP712Struct):
@@ -41,7 +51,7 @@ class Foo(EIP712Struct):
 ## Member Types
 
 ### Basic types
-Basic types map to solidity types.
+EIP712's basic types map directly to solidity types.
 
 ```python
 from eip712 import Address, Boolean, Bytes, Int, String, Uint

@@ -98,20 +98,28 @@ def test_encode_nested_structs():
     assert s.encode_value() == expected_result
 
 
-def test_struct_data_access():
-    class TestStruct(EIP712Struct):
+def test_data_dicts():
+    class Foo(EIP712Struct):
         s = String()
         i = Int(256)
 
-    struct = TestStruct(s='foo', i=7)
-    assert struct.s == 'foo'
-    assert struct.i == 7
+    class Bar(EIP712Struct):
+        foo = Foo
+        b = Bytes(1)
 
-    struct.s = 'bar'
-    struct.i = 100
+    bar = Bar(
+        foo=Foo(
+            s='hello',
+            i=100,
+        ),
+        b=b'\xff'
+    )
 
-    assert struct.s == 'bar'
-    assert struct.i == 100
-
-    expected_result = keccak(text='bar') + int(100).to_bytes(32, byteorder='big', signed=True)
-    assert struct.encode_value() == expected_result
+    expected_result = {
+        'foo': {
+            's': 'hello',
+            'i': 100,
+        },
+        'b': b'\xff'
+    }
+    assert bar.data_dict() == expected_result
