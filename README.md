@@ -8,6 +8,11 @@ It is not the same as the Python Standard Library's struct (e.g., `import struct
 Read the proposal:<br/>
 https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
 
+## Install
+```bash
+pip install eip712-structs
+```
+
 ## Basic Usage
 
 Our desired struct:
@@ -20,7 +25,7 @@ struct Message {
 
 Python representation:
 ```python
-from eip712 import EIP712Struct, Address, String
+from eip712_structs import EIP712Struct, Address, String, make_domain_separator, create_message
 
 class Message(EIP712Struct):
     to = Address()
@@ -29,23 +34,10 @@ class Message(EIP712Struct):
 enctyp = Message.encode_type()  # 'Mail(address to,string contents)'
 
 msg = Message(to='0xdead...beef', contents='hello world')
-msg.encode_value()  # The struct's data in encoded form
+msg.encode_data()  # The struct's data in encoded form
 
-```
-
-#### A gotcha
-The order attributes are declared matters! That order is preserved.
-
-For example, the following two structs are NOT the same.
-
-```python
-class Foo(EIP712Struct):
-    a = String()
-    b = String()
-
-class Foo(EIP712Struct):
-    b = String()
-    a = String()
+domain = make_domain_separator(name='example')
+msg_body, msg_hash = create_message(domain, msg)
 ```
 
 ## Member Types
@@ -54,7 +46,7 @@ class Foo(EIP712Struct):
 EIP712's basic types map directly to solidity types.
 
 ```python
-from eip712 import Address, Boolean, Bytes, Int, String, Uint
+from eip712_structs import Address, Boolean, Bytes, Int, String, Uint
 
 Address()  # Solidity's 'address'
 Boolean()  # 'bool'
