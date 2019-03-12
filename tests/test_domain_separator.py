@@ -1,5 +1,5 @@
 import os
-from eip712 import make_domain_separator
+from eip712_structs import make_domain_separator
 from eth_utils.crypto import keccak
 
 

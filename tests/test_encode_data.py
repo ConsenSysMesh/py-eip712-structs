@@ -4,7 +4,7 @@ import string
 
 from eth_utils.crypto import keccak
 
-from eip712 import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct
+from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct
 
 
 def signed_min_max(bits):

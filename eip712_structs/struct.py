@@ -3,7 +3,7 @@ from typing import List, Tuple
 
 from eth_utils.crypto import keccak
 
-from eip712.types import EIP712Type
+from eip712_structs.types import EIP712Type
 
 
 class OrderedAttributesMeta(type):
@@ -84,6 +84,9 @@ class EIP712Struct(_EIP712StructTypeHelper):
     def type_hash(cls):
         return keccak(text=cls.encode_type())
 
+    def hash_struct(self):
+        return keccak(b''.join([self.type_hash(), self.encode_data()]))
+
     @classmethod
     def get_members(cls) -> List[Tuple[str, EIP712Type]]:
         members = [m for m in cls.__dict__.items() if isinstance(m[1], EIP712Type)
@@ -95,6 +98,7 @@ def create_message(domain: EIP712Struct, primary_struct: EIP712Struct):
     structs = {domain, primary_struct}
     primary_struct._gather_reference_structs(structs)
 
+    # Build type dictionary
     types = dict()
     for struct in structs:
         members_json = [{
@@ -110,4 +114,6 @@ def create_message(domain: EIP712Struct, primary_struct: EIP712Struct):
         'message': primary_struct.data_dict(),
     }
 
-    return result
+    typed_data_hash = keccak(b'\x19\x01' + domain.type_hash() + primary_struct.type_hash())
+
+    return result, typed_data_hash

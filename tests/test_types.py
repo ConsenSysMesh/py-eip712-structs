@@ -1,6 +1,6 @@
 import pytest
 
-from eip712 import Address, Array, Boolean, Bytes, Int, String, Uint
+from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint
 
 
 def test_bytes_validation():
