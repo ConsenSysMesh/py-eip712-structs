@@ -1,3 +1,5 @@
+import re
+
 from eth_utils.crypto import keccak
 from eth_utils.conversions import to_int
 
@@ -110,3 +112,41 @@ class Uint(EIP712Type):
     def encode_value(self, value: int):
         value.to_bytes(self.length // 8, byteorder='big', signed=False)  # For validation
         return value.to_bytes(32, byteorder='big', signed=False)
+
+
+solidity_type_map = {
+    'address': Address,
+    'bool': Boolean,
+    'bytes': Bytes,
+    'int': Int,
+    'string': String,
+    'uint': Uint,
+}
+
+
+def from_solidity_type(solidity_type: str):
+    pattern = r'([a-z]+)(\d+)?(\[(\d+)?\])?'
+    match = re.match(pattern, solidity_type)
+
+    if match is None:
+        return None
+
+    type_name = match.group(1)
+    opt_len = match.group(2)
+    is_array = match.group(3)
+    array_len = match.group(4)
+
+    base_type = solidity_type_map[type_name]
+    if opt_len:
+        type_instance = base_type(opt_len)
+    else:
+        type_instance = base_type()
+
+    if is_array:
+        if array_len:
+            result = Array(type_instance, array_len)
+        else:
+            result = Array(type_instance)
+        return result
+    else:
+        return type_instance

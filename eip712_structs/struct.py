@@ -1,9 +1,9 @@
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from typing import List, Tuple
 
 from eth_utils.crypto import keccak
 
-from eip712_structs.types import EIP712Type
+from eip712_structs.types import EIP712Type, from_solidity_type
 
 
 class OrderedAttributesMeta(type):
@@ -29,8 +29,11 @@ class EIP712Struct(_EIP712StructTypeHelper):
         super(EIP712Struct, self).__init__(self.type_name)
         members = self.get_members()
         self.values = dict()
-        for name, _ in members:
-            self.values[name] = kwargs.get(name)
+        for name, typ in members:
+            value = kwargs.get(name)
+            if isinstance(value, dict):
+                value = typ(**value)
+            self.values[name] = value
 
     def encode_value(self, value=None):
         encoded_values = [typ.encode_value(self.values[name]) for name, typ in self.get_members()]
@@ -94,7 +97,7 @@ class EIP712Struct(_EIP712StructTypeHelper):
         return members
 
 
-def create_message(domain: EIP712Struct, primary_struct: EIP712Struct):
+def struct_to_json(domain: EIP712Struct, primary_struct: EIP712Struct):
     structs = {domain, primary_struct}
     primary_struct._gather_reference_structs(structs)
 
@@ -117,3 +120,31 @@ def create_message(domain: EIP712Struct, primary_struct: EIP712Struct):
     typed_data_hash = keccak(b'\x19\x01' + domain.type_hash() + primary_struct.type_hash())
 
     return result, typed_data_hash
+
+
+def struct_from_json(json):
+    structs = dict()
+    unfulfilled_struct_params = defaultdict(list)
+
+    for type_name in json['types']:
+        # Dynamically construct struct class from JSON
+        StructFromJSON = type(type_name, (EIP712Struct,), {})
+
+        for member in json['types'][type_name]:
+            # Either a basic solidity type is set, or None if referring to a reference struct (we'll fill that later)
+            member_name = member['name']
+            member_sol_type = from_solidity_type(member['type'])
+            setattr(StructFromJSON, member_name, member_sol_type)
+            if member_sol_type is None:
+                unfulfilled_struct_params[type_name].append((member_name, member['type']))
+
+        structs[type_name] = StructFromJSON
+
+    for struct_name, unfulfilled_member_names in unfulfilled_struct_params.items():
+        struct_class = structs[struct_name]
+        for name, type_name in unfulfilled_member_names:
+            ref_struct = structs[type_name]
+            setattr(struct_class, name, ref_struct)
+
+    primary_struct = structs[json['primaryType']]
+    return primary_struct(**json['message'])
