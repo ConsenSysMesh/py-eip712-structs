@@ -25,7 +25,7 @@ struct Message {
 
 Python representation:
 ```python
-from eip712_structs import EIP712Struct, Address, String, make_domain_separator, create_message
+from eip712_structs import EIP712Struct, Address, String, make_domain, struct_to_dict
 
 class Message(EIP712Struct):
     to = Address()
@@ -36,8 +36,36 @@ enctyp = Message.encode_type()  # 'Mail(address to,string contents)'
 msg = Message(to='0xdead...beef', contents='hello world')
 msg.encode_data()  # The struct's data in encoded form
 
-domain = make_domain_separator(name='example')
-msg_body, msg_hash = create_message(domain, msg)
+domain = make_domain(name='example')
+msg_body, msg_hash = struct_to_dict(msg, domain)
+```
+
+#### Dynamic construction
+Attributes may be added dynamically as well. This may be necessary if you
+want to use a reserved keyword like `from`.
+
+```python
+class Message(EIP712Struct):
+    pass
+
+Message.to = Address()
+setattr(Message, 'from', Address())
+```
+
+#### Creating Messages and Hashing
+Messages also require a domain struct. A helper method exists for this purpose.
+
+```python
+from eip712_structs import EIP712Struct, String, make_domain, struct_to_dict
+
+domain = make_domain(name='my_domain')  # Also accepts kwargs: version, chainId, verifyingContract, salt
+
+class Foo(EIP712Struct):
+    bar = String()
+
+foo = Foo(bar='baz')
+
+message_dict, message_hash = struct_to_dict(foo, domain)
 ```
 
 ## Member Types

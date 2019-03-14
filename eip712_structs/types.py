@@ -1,10 +1,13 @@
 import re
+from typing import Union, Type
 
 from eth_utils.crypto import keccak
 from eth_utils.conversions import to_int
 
 
 class EIP712Type:
+    """The base type for members of a struct.
+    """
     def __init__(self, type_name: str):
         self.type_name = type_name
 
@@ -18,7 +21,7 @@ class EIP712Type:
 
 
 class Array(EIP712Type):
-    def __init__(self, member_type: EIP712Type, fixed_length: int = 0):
+    def __init__(self, member_type: Union[EIP712Type, Type[EIP712Type]], fixed_length: int = 0):
         if fixed_length == 0:
             type_name = f'{member_type.type_name}[]'
         else:
@@ -125,6 +128,7 @@ solidity_type_map = {
 
 
 def from_solidity_type(solidity_type: str):
+    """Convert a string into the EIP712Type implementation. Basic types only."""
     pattern = r'([a-z]+)(\d+)?(\[(\d+)?\])?'
     match = re.match(pattern, solidity_type)
 
@@ -135,6 +139,9 @@ def from_solidity_type(solidity_type: str):
     opt_len = match.group(2)
     is_array = match.group(3)
     array_len = match.group(4)
+
+    if type_name not in solidity_type_map:
+        return None
 
     base_type = solidity_type_map[type_name]
     if opt_len:

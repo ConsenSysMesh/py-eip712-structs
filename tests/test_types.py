@@ -1,6 +1,6 @@
 import pytest
 
-from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint
+from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct
 
 
 def test_bytes_validation():
@@ -48,3 +48,11 @@ def test_arrays():
     assert Array(Bytes(17), 10).type_name == 'bytes17[10]'
 
     assert Array(Array(Uint(160))).type_name == 'uint160[][]'
+
+
+def test_struct_arrays():
+    class Foo(EIP712Struct):
+        s = String()
+
+    assert Array(Foo).type_name == 'Foo[]'
+    assert Array(Foo, 10).type_name == 'Foo[10]'
