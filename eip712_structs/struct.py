@@ -120,7 +120,7 @@ class EIP712Struct(_EIP712StructTypeHelper):
 
         hash_struct => keccak(type_hash || encode_data)
         """
-        return keccak(b''.join([self.type_hash(), self.encode_data()]))
+        return keccak(b''.join([self.type_hash(), self.encode_value()]))
 
     @classmethod
     def get_members(cls) -> List[Tuple[str, EIP712Type]]:
@@ -133,7 +133,7 @@ class EIP712Struct(_EIP712StructTypeHelper):
         return members
 
 
-def struct_to_dict(primary_struct: EIP712Struct, domain: EIP712Struct):
+def struct_to_message(primary_struct: EIP712Struct, domain: EIP712Struct):
     """Convert a struct into a dictionary suitable for messaging.
 
     Dictionary is of the form:
@@ -168,12 +168,12 @@ def struct_to_dict(primary_struct: EIP712Struct, domain: EIP712Struct):
         'message': primary_struct.data_dict(),
     }
 
-    typed_data_hash = keccak(b'\x19\x01' + domain.type_hash() + primary_struct.type_hash())
+    typed_data_hash = b'\x19\x01' + domain.type_hash() + primary_struct.type_hash()
 
     return result, typed_data_hash
 
 
-def struct_from_dict(message_dict):
+def struct_from_message(message_dict):
     """Return the EIP712Struct object of the message and domain structs.
 
     :returns: A tuple in the form of: (<primary struct>, <domain struct>)

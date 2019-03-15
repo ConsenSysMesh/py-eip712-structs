@@ -1,4 +1,4 @@
-from eip712_structs import EIP712Struct, String, make_domain, struct_to_dict, struct_from_dict
+from eip712_structs import EIP712Struct, String, make_domain, struct_to_message, struct_from_message
 
 
 def test_flat_struct_to_message():
@@ -28,11 +28,11 @@ def test_flat_struct_to_message():
         }
     }
 
-    message, _ = struct_to_dict(foo, domain)
+    message, _ = struct_to_message(foo, domain)
     assert message == expected_result
 
     # Now test in reverse...
-    new_struct, domain = struct_from_dict(expected_result)
+    new_struct, domain = struct_from_message(expected_result)
     assert new_struct.type_name == 'Foo'
 
     members_list = new_struct.get_members()
@@ -88,11 +88,11 @@ def test_nested_struct_to_message():
         }
     }
 
-    message, _ = struct_to_dict(foo, domain)
+    message, _ = struct_to_message(foo, domain)
     assert message == expected_result
 
     # And test in reverse...
-    new_struct, new_domain = struct_from_dict(expected_result)
+    new_struct, new_domain = struct_from_message(expected_result)
     assert new_struct.type_name == 'Foo'
 
     members = new_struct.get_members()
@@ -103,3 +103,5 @@ def test_nested_struct_to_message():
     bar_val = new_struct.get_data_value('bar')
     assert bar_val.type_name == 'Bar'
     assert bar_val.get_data_value('s') == 'bar'
+
+    assert foo.hash_struct() == new_struct.hash_struct()

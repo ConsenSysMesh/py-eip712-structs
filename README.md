@@ -25,7 +25,7 @@ struct Message {
 
 Python representation:
 ```python
-from eip712_structs import EIP712Struct, Address, String, make_domain, struct_to_dict
+from eip712_structs import EIP712Struct, Address, String, make_domain, struct_to_message
 
 class Message(EIP712Struct):
     to = Address()
@@ -37,7 +37,16 @@ msg = Message(to='0xdead...beef', contents='hello world')
 msg.encode_data()  # The struct's data in encoded form
 
 domain = make_domain(name='example')
-msg_body, msg_hash = struct_to_dict(msg, domain)
+msg_body, signable_bytes = struct_to_message(msg, domain)
+
+# msg_body is a standardized dict with keys primaryType, types, domain, and message
+# suitable for converting to JSON for making requests
+
+# `signable bytes` is a deterministic bytes representation of the struct
+# Suitable for hashing or signing
+#   bytes 0-1: b'\x19\x01'
+#   bytes 2-33: domain separator (hash of domain type and data)
+#   bytes 34-65: hash of struct type and data
 ```
 
 #### Dynamic construction
@@ -52,21 +61,28 @@ Message.to = Address()
 setattr(Message, 'from', Address())
 ```
 
-#### Creating Messages and Hashing
+#### The domain separator
 Messages also require a domain struct. A helper method exists for this purpose.
+All values to the `make_domain()`
+function are optional - but at least one must be defined. If omitted, the resulting
+domain struct's definition leaves out the parameter entirely.
+
+The full signature: <br/>
+`make_domain(name: string, version: string, chainId: uint256, verifyingContract: address, salt: bytes32)`
 
 ```python
-from eip712_structs import EIP712Struct, String, make_domain, struct_to_dict
+from eip712_structs import EIP712Struct, String, make_domain, struct_to_message
 
-domain = make_domain(name='my_domain')  # Also accepts kwargs: version, chainId, verifyingContract, salt
+domain = make_domain(name='my_domain')
 
 class Foo(EIP712Struct):
     bar = String()
 
 foo = Foo(bar='baz')
 
-message_dict, message_hash = struct_to_dict(foo, domain)
+message_dict, message_hash = struct_to_message(foo, domain)
 ```
+
 
 ## Member Types
 
@@ -111,6 +127,23 @@ Dog.encode_type()     # Dog(string name,string breed)
 Person.encode_type()  # Person(string name,Dog dog)Dog(string name,string breed)
 ```
 
+Instantiating the structs with nested values may be done like:
+
+```python
+# Method one: set it to a struct
+dog = Dog(name='Mochi', breed='Corgi')
+person = Person(name='Ed', dog=dog)
+
+# Method two: set it to a dict - the underlying struct is built for you
+person = Person(
+    name='Ed',
+    dog={
+        'name': 'Mochi',
+        'breed': 'Corgi',
+    }
+)
+```
+
 ### Arrays
 Arrays are also supported for the standard.
 
@@ -123,8 +156,9 @@ array_member = Array(<item_type>[, <optional_length>])
 
 For example:
 ```python
-dynamic_array = Array(X())      # X[] dynamic_array
-static_array  = Array(X(), 10)  # X[10] static_array
+dynamic_array = Array(String())      # String[] dynamic_array
+static_array  = Array(String(), 10)  # String[10] static_array
+struct_array = Array(MyStruct, 10)   # MyStruct[10] - again, don't instantiate structs like the basic types
 ```
 
 ## Development
