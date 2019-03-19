@@ -15,17 +15,7 @@ class OrderedAttributesMeta(type):
         return OrderedDict()
 
 
-class _EIP712StructTypeHelper(EIP712Type, metaclass=OrderedAttributesMeta):
-    """Helper class to map the more complex struct type to the basic type interface.
-    """
-
-    @classmethod
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        cls.type_name = cls.__name__
-
-
-class EIP712Struct(_EIP712StructTypeHelper):
+class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
     """A representation of an EIP712 struct. Subclass it to use it.
 
     Example:
@@ -45,6 +35,11 @@ class EIP712Struct(_EIP712StructTypeHelper):
             if isinstance(value, dict):
                 value = typ(**value)
             self.values[name] = value
+
+    @classmethod
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls.type_name = cls.__name__
 
     def encode_value(self, value=None):
         """Returns the struct's encoded value.
