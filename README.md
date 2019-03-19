@@ -8,6 +8,10 @@ It is not the same as the Python Standard Library's struct (e.g., `import struct
 Read the proposal:<br/>
 https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
 
+#### Supported Python Versions
+- `3.6`
+- `3.7`
+
 ## Install
 ```bash
 pip install eip712-structs
