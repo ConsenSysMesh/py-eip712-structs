@@ -1,4 +1,4 @@
-# EIP-712 Structs
+# EIP-712 Structs  [![Build Status](https://travis-ci.org/ajrgrubbs/py-eip712-structs.svg?branch=master)](https://travis-ci.org/ajrgrubbs/py-eip712-structs)
 
 A python interface for simple EIP-712 struct construction.
 
