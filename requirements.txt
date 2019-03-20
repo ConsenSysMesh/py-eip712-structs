@@ -1,3 +1,2 @@
 eth-utils==1.4.1
 pysha3==1.0.2
-pytest==4.3.0
