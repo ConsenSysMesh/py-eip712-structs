@@ -166,5 +166,10 @@ struct_array = Array(MyStruct, 10)   # MyStruct[10] - again, don't instantiate s
 ```
 
 ## Development
+Contributions always welcome.
+
+Install dependencies:
+- `pip install -r requirements.txt && pip install -r test_requirements.txt`
+
 Run tests:
-- `pytest tests`
+- `python setup.py test`
