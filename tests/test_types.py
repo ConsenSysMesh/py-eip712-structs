@@ -1,6 +1,7 @@
 import pytest
 
 from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct
+from eip712_structs.types import from_solidity_type
 
 
 def test_bytes_validation():
@@ -56,3 +57,31 @@ def test_struct_arrays():
 
     assert Array(Foo).type_name == 'Foo[]'
     assert Array(Foo, 10).type_name == 'Foo[10]'
+
+
+def test_length_str_typing():
+    # Ensure that if length is given as a string, it's typecast to int
+    assert Array(String(), '5').fixed_length == 5
+    assert Bytes('10').length == 10
+    assert Int('128').length == 128
+    assert Uint('128').length == 128
+
+
+def test_from_solidity_type():
+    assert from_solidity_type('address') == Address()
+    assert from_solidity_type('bool') == Boolean()
+    assert from_solidity_type('bytes') == Bytes()
+    assert from_solidity_type('bytes32') == Bytes(32)
+    assert from_solidity_type('int128') == Int(128)
+    assert from_solidity_type('string') == String()
+    assert from_solidity_type('uint256') == Uint(256)
+
+    assert from_solidity_type('address[]') == Array(Address())
+    assert from_solidity_type('address[10]') == Array(Address(), 10)
+    assert from_solidity_type('bytes16[32]') == Array(Bytes(16), 32)
+
+    # Sanity check that equivalency is working as expected
+    assert from_solidity_type('bytes32') != Bytes(31)
+    assert from_solidity_type('bytes16[32]') != Array(Bytes(16), 31)
+    assert from_solidity_type('bytes16[32]') != Array(Bytes(), 32)
+    assert from_solidity_type('bytes16[32]') != Array(Bytes(8), 32)

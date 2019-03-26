@@ -3,4 +3,4 @@ from eip712_structs.struct import EIP712Struct, struct_from_message, struct_to_m
 from eip712_structs.types import Address, Array, Boolean, Bytes, Int, String, Uint
 
 name = 'eip712-structs'
-version = '0.1.3'
+version = '0.1.4'
