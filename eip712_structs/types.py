@@ -19,14 +19,25 @@ class EIP712Type:
         """
         pass
 
+    def __eq__(self, other):
+        self_type = getattr(self, 'type_name')
+        other_type = getattr(other, 'type_name')
+
+        return self_type is not None and self_type == other_type
+
+    def __hash__(self):
+        return hash(self.type_name)
+
 
 class Array(EIP712Type):
     def __init__(self, member_type: Union[EIP712Type, Type[EIP712Type]], fixed_length: int = 0):
+        fixed_length = int(fixed_length)
         if fixed_length == 0:
             type_name = f'{member_type.type_name}[]'
         else:
             type_name = f'{member_type.type_name}[{fixed_length}]'
         self.member_type = member_type
+        self.fixed_length = fixed_length
         super(Array, self).__init__(type_name)
 
     def encode_value(self, value):
@@ -65,6 +76,7 @@ class Boolean(EIP712Type):
 
 class Bytes(EIP712Type):
     def __init__(self, length: int = 0):
+        length = int(length)
         if length == 0:
             # Special case: Length of 0 means a dynamic bytes type
             type_name = 'bytes'
@@ -87,6 +99,7 @@ class Bytes(EIP712Type):
 
 class Int(EIP712Type):
     def __init__(self, length: int):
+        length = int(length)
         if length < 8 or length > 256 or length % 8 != 0:
             raise ValueError(f'Int length must be a multiple of 8, between 8 and 256. Got: {length}')
         self.length = length
@@ -107,6 +120,7 @@ class String(EIP712Type):
 
 class Uint(EIP712Type):
     def __init__(self, length: int):
+        length = int(length)
         if length < 8 or length > 256 or length % 8 != 0:
             raise ValueError(f'Uint length must be a multiple of 8, between 8 and 256. Got: {length}')
         self.length = length
@@ -145,13 +159,13 @@ def from_solidity_type(solidity_type: str):
 
     base_type = solidity_type_map[type_name]
     if opt_len:
-        type_instance = base_type(opt_len)
+        type_instance = base_type(int(opt_len))
     else:
         type_instance = base_type()
 
     if is_array:
         if array_len:
-            result = Array(type_instance, array_len)
+            result = Array(type_instance, int(array_len))
         else:
             result = Array(type_instance)
         return result
