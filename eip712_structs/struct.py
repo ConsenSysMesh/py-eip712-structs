@@ -163,7 +163,7 @@ def struct_to_message(primary_struct: EIP712Struct, domain: EIP712Struct):
         'message': primary_struct.data_dict(),
     }
 
-    typed_data_hash = b'\x19\x01' + domain.type_hash() + primary_struct.type_hash()
+    typed_data_hash = b'\x19\x01' + domain.hash_struct() + primary_struct.hash_struct()
 
     return result, typed_data_hash
 
