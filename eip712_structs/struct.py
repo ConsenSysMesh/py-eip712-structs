@@ -27,7 +27,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         struct_instance = MyStruct(some_param='some_value')
     """
     def __init__(self, **kwargs):
-        super(EIP712Struct, self).__init__(self.type_name)
+        super(EIP712Struct, self).__init__(self.type_name, None)
         members = self.get_members()
         self.values = dict()
         for name, typ in members:

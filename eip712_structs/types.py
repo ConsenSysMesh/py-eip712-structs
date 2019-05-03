@@ -1,5 +1,5 @@
 import re
-from typing import Union, Type
+from typing import Any, Union, Type
 
 from eth_utils.crypto import keccak
 from eth_utils.conversions import to_int
@@ -8,10 +8,17 @@ from eth_utils.conversions import to_int
 class EIP712Type:
     """The base type for members of a struct.
     """
-    def __init__(self, type_name: str):
+    def __init__(self, type_name: str, none_val: Any):
         self.type_name = type_name
+        self.none_val = none_val
 
     def encode_value(self, value) -> bytes:
+        if value is None:
+            return self._encode_value(self.none_val)
+        else:
+            return self._encode_value(value)
+
+    def _encode_value(self, value) -> bytes:
         """Given a value, verify it and convert into the format required by the spec.
 
         :param value: A correct input value for the implemented type.
@@ -38,9 +45,9 @@ class Array(EIP712Type):
             type_name = f'{member_type.type_name}[{fixed_length}]'
         self.member_type = member_type
         self.fixed_length = fixed_length
-        super(Array, self).__init__(type_name)
+        super(Array, self).__init__(type_name, [])
 
-    def encode_value(self, value):
+    def _encode_value(self, value):
         encoder = self.member_type
         encoded_values = [encoder.encode_value(v) for v in value]
         return keccak(b''.join(encoded_values))
@@ -48,9 +55,9 @@ class Array(EIP712Type):
 
 class Address(EIP712Type):
     def __init__(self):
-        super(Address, self).__init__('address')
+        super(Address, self).__init__('address', 0)
 
-    def encode_value(self, value):
+    def _encode_value(self, value):
         # Some smart conversions - need to get an address as an int
         if isinstance(value, bytes):
             v = to_int(value)
@@ -63,9 +70,9 @@ class Address(EIP712Type):
 
 class Boolean(EIP712Type):
     def __init__(self):
-        super(Boolean, self).__init__('bool')
+        super(Boolean, self).__init__('bool', False)
 
-    def encode_value(self, value):
+    def _encode_value(self, value):
         if value is False:
             return Uint(256).encode_value(0)
         elif value is True:
@@ -85,9 +92,9 @@ class Bytes(EIP712Type):
         else:
             raise ValueError(f'Byte length must be between 1 or 32. Got: {length}')
         self.length = length
-        super(Bytes, self).__init__(type_name)
+        super(Bytes, self).__init__(type_name, b'')
 
-    def encode_value(self, value):
+    def _encode_value(self, value):
         if self.length == 0:
             return keccak(value)
         else:
@@ -103,18 +110,18 @@ class Int(EIP712Type):
         if length < 8 or length > 256 or length % 8 != 0:
             raise ValueError(f'Int length must be a multiple of 8, between 8 and 256. Got: {length}')
         self.length = length
-        super(Int, self).__init__(f'int{length}')
+        super(Int, self).__init__(f'int{length}', 0)
 
-    def encode_value(self, value: int):
+    def _encode_value(self, value: int):
         value.to_bytes(self.length // 8, byteorder='big', signed=True)  # For validation
         return value.to_bytes(32, byteorder='big', signed=True)
 
 
 class String(EIP712Type):
     def __init__(self):
-        super(String, self).__init__('string')
+        super(String, self).__init__('string', '')
 
-    def encode_value(self, value):
+    def _encode_value(self, value):
         return keccak(text=value)
 
 
@@ -124,9 +131,9 @@ class Uint(EIP712Type):
         if length < 8 or length > 256 or length % 8 != 0:
             raise ValueError(f'Uint length must be a multiple of 8, between 8 and 256. Got: {length}')
         self.length = length
-        super(Uint, self).__init__(f'uint{length}')
+        super(Uint, self).__init__(f'uint{length}', 0)
 
-    def encode_value(self, value: int):
+    def _encode_value(self, value: int):
         value.to_bytes(self.length // 8, byteorder='big', signed=False)  # For validation
         return value.to_bytes(32, byteorder='big', signed=False)
 

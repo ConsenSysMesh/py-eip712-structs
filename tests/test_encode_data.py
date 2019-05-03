@@ -141,3 +141,17 @@ def test_signable_bytes():
     assert sign_bytes[0:2] == start_bytes
     assert sign_bytes[2:34] == exp_domain_bytes
     assert sign_bytes[34:] == exp_struct_bytes
+
+
+def test_none_replacement():
+    class Foo(EIP712Struct):
+        s = String()
+        i = Int(256)
+
+    foo = Foo(**{})
+    encoded_val = foo.encode_value()
+    assert len(encoded_val) == 64
+
+    empty_string_hash = keccak(text='')
+    assert encoded_val[0:32] == empty_string_hash
+    assert encoded_val[32:] == bytes(32)
