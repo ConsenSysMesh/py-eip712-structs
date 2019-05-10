@@ -17,40 +17,35 @@ https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
 pip install eip712-structs
 ```
 
-## Basic Usage
-
-Our desired struct:
-```
-struct Message {
-    address to;
-    string contents;
+## Quickstart
+Say we want to represent the following struct, convert it to a message and sign it:
+```text
+struct MyStruct {
+    string some_string;
+    uint some_number;
 }
 ```
 
-Python representation:
+With this module:
 ```python
-from eip712_structs import EIP712Struct, Address, String, make_domain, struct_to_message
+# Make a unique domain
+from eip712_structs import make_domain
+domain = make_domain(name='Some name', version='1.0.0')
 
-class Message(EIP712Struct):
-    to = Address()
-    contents = String()
-    
-enctyp = Message.encode_type()  # 'Mail(address to,string contents)'
+# Define your struct type
+from eip712_structs import EIP712Struct, String, Uint
+class MyStruct(EIP712Struct):
+    some_string = String()
+    some_number = Uint(256)
 
-msg = Message(to='0xdead...beef', contents='hello world')
-msg.encode_data()  # The struct's data in encoded form
+# Create an instance with some data
+mine = MyStruct(some_string='hello world', some_number=1234)
 
-domain = make_domain(name='example')
-msg_body, signable_bytes = struct_to_message(msg, domain)
+# Into a message dict (serializable to JSON) - domain required
+my_msg = mine.to_message(domain)
 
-# msg_body is a standardized dict with keys primaryType, types, domain, and message
-# suitable for converting to JSON for making requests
-
-# `signable bytes` is a deterministic bytes representation of the struct
-# Suitable for hashing or signing
-#   bytes 0-1: b'\x19\x01'
-#   bytes 2-33: domain separator (hash of domain type and data)
-#   bytes 34-65: hash of struct type and data
+# Into signable bytes - domain required
+my_bytes = mine.signable_bytes(domain)
 ```
 
 #### Dynamic construction
@@ -58,6 +53,7 @@ Attributes may be added dynamically as well. This may be necessary if you
 want to use a reserved keyword like `from`.
 
 ```python
+from eip712_structs import EIP712Struct, Address
 class Message(EIP712Struct):
     pass
 
@@ -66,26 +62,14 @@ setattr(Message, 'from', Address())
 ```
 
 #### The domain separator
-Messages also require a domain struct. A helper method exists for this purpose.
+EIP-712 specifies a domain struct, to differentiate between identical structs that may be unrelated.
+A helper method exists for this purpose.
 All values to the `make_domain()`
 function are optional - but at least one must be defined. If omitted, the resulting
 domain struct's definition leaves out the parameter entirely.
 
 The full signature: <br/>
 `make_domain(name: string, version: string, chainId: uint256, verifyingContract: address, salt: bytes32)`
-
-```python
-from eip712_structs import EIP712Struct, String, make_domain, struct_to_message
-
-domain = make_domain(name='my_domain')
-
-class Foo(EIP712Struct):
-    bar = String()
-
-foo = Foo(bar='baz')
-
-message_dict, message_hash = struct_to_message(foo, domain)
-```
 
 
 ## Member Types
@@ -107,6 +91,8 @@ Uint(N)    # 'uintN' - N must be a multiple of 8, from 8 to 256
 
 Use like:
 ```python
+from eip712_structs import EIP712Struct, Address, Bytes
+
 class Foo(EIP712Struct):
     member_name_0 = Address()
     member_name_1 = Bytes(5)
@@ -119,6 +105,8 @@ Usage is almost the same - the difference is you don't "instantiate" the class.
 
 Example:
 ```python
+from eip712_structs import EIP712Struct, String
+
 class Dog(EIP712Struct):
     name = String()
     breed = String()
@@ -127,20 +115,23 @@ class Person(EIP712Struct):
     name = String()
     dog = Dog  # Take note - no parentheses!
 
+# Dog "stands alone"
 Dog.encode_type()     # Dog(string name,string breed)
+
+# But Person knows how to include Dog
 Person.encode_type()  # Person(string name,Dog dog)Dog(string name,string breed)
 ```
 
-Instantiating the structs with nested values may be done like:
+Instantiating the structs with nested values may be done a couple different ways:
 
 ```python
 # Method one: set it to a struct
 dog = Dog(name='Mochi', breed='Corgi')
-person = Person(name='Ed', dog=dog)
+person = Person(name='E.M.', dog=dog)
 
 # Method two: set it to a dict - the underlying struct is built for you
 person = Person(
-    name='Ed',
+    name='E.M.',
     dog={
         'name': 'Mochi',
         'breed': 'Corgi',

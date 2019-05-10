@@ -4,7 +4,7 @@ import string
 
 from eth_utils.crypto import keccak
 
-from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct, make_domain, struct_to_message
+from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct, make_domain
 
 
 def signed_min_max(bits):
@@ -137,7 +137,7 @@ def test_signable_bytes():
     exp_domain_bytes = keccak(domain.type_hash() + domain.encode_value())
     exp_struct_bytes = keccak(foo.type_hash() + foo.encode_value())
 
-    msg, sign_bytes = struct_to_message(foo, domain)
+    sign_bytes = foo.signable_bytes(domain)
     assert sign_bytes[0:2] == start_bytes
     assert sign_bytes[2:34] == exp_domain_bytes
     assert sign_bytes[34:] == exp_struct_bytes
