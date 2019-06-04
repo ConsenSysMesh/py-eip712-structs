@@ -164,3 +164,6 @@ Install dependencies:
 
 Run tests:
 - `python setup.py test`
+- Some tests expect an active local ganache chain. Compile contracts and start the chain using docker:
+    - `docker-compose up -d`
+    - If the chain is not detected, then they are skipped.
