@@ -1,0 +1,17 @@
+---
+version: "3"
+services:
+  ganache:
+    image: "trufflesuite/ganache-cli:latest"
+    # Corresponding account address: 0xD68D840e1e971750E6d45049ff579925456d5893
+    command: "--account=\"0x3660582119566511de16f4dcf397fa324b27bd6247f653cf0298a0993f3432ed,100000000000000000000\""
+    ports:
+      - "8545:8545"
+    depends_on:
+      - compiler
+
+  compiler:
+    image: "ethereum/solc:stable"
+    command: "--abi --bin -o /tmp/contracts/build --overwrite /tmp/contracts/hasher.sol"
+    volumes:
+      - ./tests/contracts:/tmp/contracts
