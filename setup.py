@@ -1,7 +1,7 @@
-import subprocess
+import shlex
 import sys
 
-from setuptools import setup, find_packages, Command
+from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
 from eip712_structs import name, version
@@ -29,8 +29,6 @@ class PyTest(TestCommand):
         self.pytest_args = ""
 
     def run_tests(self):
-        import shlex
-
         # import here, cause outside the eggs aren't loaded
         import pytest
 
@@ -38,19 +36,18 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-class CoverallsCommand(Command):
+class CoverallsCommand(TestCommand):
     description = 'Run the coveralls command'
-    user_options = []
+    user_options = [("coveralls-args=", "a", "Arguments to pass to coveralls")]
 
     def initialize_options(self):
-        pass
+        TestCommand.initialize_options(self)
+        self.coveralls_args = ""
 
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        command = ['coveralls']
-        subprocess.run(command, check=True)
+    def run_tests(self):
+        import coveralls.cli
+        errno = coveralls.cli.main(shlex.split(self.coveralls_args))
+        sys.exit(errno)
 
 
 setup(
