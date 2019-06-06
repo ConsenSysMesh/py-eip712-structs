@@ -88,14 +88,17 @@ def test_encode_nested_structs():
     s2 = 'bar'
     s3 = 'baz'
 
+    sub_1 = SubStruct(s=s1)
+    sub_3 = SubStruct(s=s3)
+
     s = MainStruct(
-        sub_1=SubStruct(s=s1),
+        sub_1=sub_1,
         sub_2=s2,
-        sub_3=SubStruct(s=s3),
+        sub_3=sub_3,
     )
 
-    expected_result = b''.join(keccak(text=val) for val in [s1, s2, s3])
-    assert s.encode_value() == expected_result
+    expected_encoded_vals = b''.join([sub_1.hash_struct(), keccak(text=s2), sub_3.hash_struct()])
+    assert s.encode_value() == expected_encoded_vals
 
 
 def test_data_dicts():

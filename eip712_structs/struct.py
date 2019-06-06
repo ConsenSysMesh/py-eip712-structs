@@ -49,7 +49,15 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         :param value: This parameter is not used for structs.
         """
-        encoded_values = [typ.encode_value(self.values[name]) for name, typ in self.get_members()]
+        encoded_values = list()
+        for name, typ in self.get_members():
+            if isinstance(typ, type) and issubclass(typ, EIP712Struct):
+                # Nested structs are recursively hashed, with the resulting 32-byte hash appended to the list of values
+                sub_struct = self.get_data_value(name)
+                encoded_values.append(sub_struct.hash_struct())
+            else:
+                # Regular types are encoded as normal
+                encoded_values.append(typ.encode_value(self.values[name]))
         return b''.join(encoded_values)
 
     def get_data_value(self, name):
@@ -91,7 +99,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
     @classmethod
     def _gather_reference_structs(cls, struct_set):
-        """Finds reference structs defined in this struct type, and populates the given set with them.
+        """Finds reference structs defined in this struct type, and inserts them into the given set.
         """
         structs = [m[1] for m in cls.get_members() if isinstance(m[1], type) and issubclass(m[1], EIP712Struct)]
         for struct in structs:
@@ -108,11 +116,11 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         return cls._encode_type(True)
 
     @classmethod
-    def type_hash(cls):
+    def type_hash(cls) -> bytes:
         """Get the keccak hash of the struct's encoded type."""
         return keccak(text=cls.encode_type())
 
-    def hash_struct(self):
+    def hash_struct(self) -> bytes:
         """The hash of the struct.
 
         hash_struct => keccak(type_hash || encode_data)

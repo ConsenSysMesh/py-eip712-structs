@@ -12,6 +12,6 @@ services:
 
   compiler:
     image: "ethereum/solc:stable"
-    command: "--abi --bin -o /tmp/contracts/build --overwrite /tmp/contracts/hasher.sol"
+    command: "--abi --bin -o /tmp/contracts/build --overwrite /tmp/contracts/hash_test_contract.sol"
     volumes:
       - ./tests/contracts:/tmp/contracts
