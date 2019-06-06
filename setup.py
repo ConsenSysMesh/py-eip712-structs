@@ -1,6 +1,7 @@
+import subprocess
 import sys
 
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Command
 from setuptools.command.test import test as TestCommand
 
 from eip712_structs import name, version
@@ -37,13 +38,31 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
+class CoverallsCommand(Command):
+    description = 'Run the coveralls command'
+    user_options = []
+
+    def initialize_options(self):
+        pass
+
+    def finalize_options(self):
+        pass
+
+    def run(self):
+        command = ['coveralls']
+        subprocess.run(command, check=True)
+
+
 setup(
     name=name,
     version=version,
     packages=find_packages(),
     install_requires=install_requirements,
     tests_require=test_requirements,
-    cmdclass={"test": PyTest},
+    cmdclass={
+        "test": PyTest,
+        "coveralls": CoverallsCommand,
+    },
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='MIT',

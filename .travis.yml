@@ -11,4 +11,4 @@ services:
 before_install:
   - docker-compose up -d
 after_success:
-  - coveralls
+  - python setup.py coveralls
