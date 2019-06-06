@@ -3,6 +3,7 @@ import random
 import string
 
 from eth_utils.crypto import keccak
+import pytest
 
 from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct, make_domain
 
@@ -158,3 +159,31 @@ def test_none_replacement():
     empty_string_hash = keccak(text='')
     assert encoded_val[0:32] == empty_string_hash
     assert encoded_val[32:] == bytes(32)
+
+
+def test_validation_errors():
+    bytes_type = Bytes(10)
+    int_type = Int(8)    # -128 <= i < 128
+    uint_type = Uint(8)  # 0 <= i < 256
+    bool_type = Boolean()
+
+    with pytest.raises(ValueError, match='bytes10 was given bytes with length 11'):
+        bytes_type.encode_value(os.urandom(11))
+
+    with pytest.raises(OverflowError, match='too big'):
+        int_type.encode_value(128)
+    with pytest.raises(OverflowError, match='too big'):
+        int_type.encode_value(-129)
+
+    with pytest.raises(OverflowError, match='too big'):
+        uint_type.encode_value(256)
+    assert uint_type.encode_value(0) == bytes(32)
+    with pytest.raises(OverflowError, match='negative int to unsigned'):
+        uint_type.encode_value(-1)
+
+    assert bool_type.encode_value(True) == bytes(31) + b'\x01'
+    assert bool_type.encode_value(False) == bytes(32)
+    with pytest.raises(ValueError, match='Must be True or False.'):
+        bool_type.encode_value(0)
+    with pytest.raises(ValueError, match='Must be True or False.'):
+        bool_type.encode_value(1)

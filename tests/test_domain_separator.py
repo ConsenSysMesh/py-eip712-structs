@@ -1,6 +1,9 @@
 import os
-from eip712_structs import make_domain
+
+import pytest
 from eth_utils.crypto import keccak
+
+from eip712_structs import make_domain
 
 
 def test_domain_sep_create():
@@ -12,6 +15,9 @@ def test_domain_sep_create():
 
     expected_data = b''.join([keccak(text='name'), salt])
     assert domain_struct.encode_value() == expected_data
+
+    with pytest.raises(ValueError, match='At least one argument must be given'):
+        make_domain()
 
 
 def test_domain_sep_types():

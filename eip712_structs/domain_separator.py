@@ -8,7 +8,7 @@ def make_domain(name=None, version=None, chainId=None, verifyingContract=None, s
     """
 
     if all(i is None for i in [name, version, chainId, verifyingContract, salt]):
-        raise ValueError('At least on argument must be given.')
+        raise ValueError('At least one argument must be given.')
 
     class EIP712Domain(eip712_structs.EIP712Struct):
         pass
