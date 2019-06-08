@@ -4,3 +4,6 @@ from eip712_structs.types import Address, Array, Boolean, Bytes, Int, String, Ui
 
 name = 'eip712-structs'
 version = '1.0.0'
+
+
+default_domain = None
