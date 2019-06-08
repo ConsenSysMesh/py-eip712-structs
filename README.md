@@ -71,6 +71,21 @@ domain struct's definition leaves out the parameter entirely.
 The full signature: <br/>
 `make_domain(name: string, version: string, chainId: uint256, verifyingContract: address, salt: bytes32)`
 
+##### Setting a default domain
+Constantly providing the same domain can be cumbersome. You can optionally set a default, and then forget it.
+It is automatically used by `.to_message()` and `.signable_bytes()`
+
+```python
+import eip712_structs
+
+foo = SomeStruct()
+
+my_domain = eip712_structs.make_domain(name='hello world')
+eip712_structs.default_domain = my_domain
+
+assert foo.to_message() == foo.to_message(my_domain)
+assert foo.signable_bytes() == foo.signable_bytes(my_domain)
+```
 
 ## Member Types
 
