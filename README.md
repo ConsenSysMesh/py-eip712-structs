@@ -22,15 +22,15 @@ Say we want to represent the following struct, convert it to a message and sign 
 ```text
 struct MyStruct {
     string some_string;
-    uint some_number;
+    uint256 some_number;
 }
 ```
 
-With this module:
+With this module, that would look like:
 ```python
 # Make a unique domain
 from eip712_structs import make_domain
-domain = make_domain(name='Some name', version='1.0.0')
+domain = make_domain(name='Some name', version='1.0.0')  # Make a Domain Separator
 
 # Define your struct type
 from eip712_structs import EIP712Struct, String, Uint
@@ -175,10 +175,21 @@ struct_array = Array(MyStruct, 10)   # MyStruct[10] - again, don't instantiate s
 Contributions always welcome.
 
 Install dependencies:
-- `pip install -r requirements.txt && pip install -r test_requirements.txt`
+- `pip install -r requirements.txt -r test_requirements.txt`
 
 Run tests:
 - `python setup.py test`
-- Some tests expect an active local ganache chain. Compile contracts and start the chain using docker:
-    - `docker-compose up -d`
-    - If the chain is not detected, then they are skipped.
+- Some tests expect an active local ganache chain on http://localhost:8545. Docker will compile the contracts and start the chain for you.
+- Docker is optional, but useful to test the whole suite. If no chain is detected, chain tests are skipped.
+- Usage:
+    - `docker-compose up -d` (Starts containers in the background)
+    - Note: Contracts are compiled when you run `up`, but won't be deployed until the test is run.
+    - Cleanup containers when you're done: `docker-compose down`
+
+Deploying a new version:
+- Set the version number in `eip712_structs/__init__.py`
+- Make a release tag on the master branch in Github. Travis should handle the rest.
+
+
+## Shameless Plug
+Written by [ConsenSys](https://consensys.net) for ourselves and the community! :heart:
