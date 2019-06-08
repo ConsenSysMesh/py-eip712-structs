@@ -4,6 +4,7 @@ from typing import List, Tuple, NamedTuple
 
 from eth_utils.crypto import keccak
 
+import eip712_structs
 from eip712_structs.types import Array, EIP712Type, from_solidity_type
 
 
@@ -137,7 +138,14 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
                    or (isinstance(m[1], type) and issubclass(m[1], EIP712Struct))]
         return members
 
-    def to_message(self, domain: 'EIP712Struct') -> dict:
+    @staticmethod
+    def _assert_domain(domain):
+        result = domain or eip712_structs.default_domain
+        if not result:
+            raise ValueError('Domain must be provided, or eip712_structs.default_domain must be set.')
+        return result
+
+    def to_message(self, domain: 'EIP712Struct' = None) -> dict:
         """Convert a struct into a dictionary suitable for messaging.
 
             Dictionary is of the form:
@@ -150,6 +158,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
             :returns: This struct + the domain in dict form, structured as specified for EIP712 messages.
             """
+        domain = self._assert_domain(domain)
         structs = {domain, self}
         self._gather_reference_structs(structs)
 
@@ -171,15 +180,16 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         return result
 
-    def signable_bytes(self, domain: 'EIP712Struct') -> bytes:
+    def signable_bytes(self, domain: 'EIP712Struct' = None) -> bytes:
         """Return a ``bytes`` object suitable for signing, as specified for EIP712.
 
         As per the spec, bytes are constructed as follows:
             ``b'\x19\x01' + domain_hash_bytes + struct_hash_bytes``
 
-        :param domain: The domain to include in the hash bytes
+        :param domain: The domain to include in the hash bytes. If None, uses ``eip712_structs.default_domain``
         :return: The bytes object
         """
+        domain = self._assert_domain(domain)
         result = b'\x19\x01' + domain.hash_struct() + self.hash_struct()
         return result
 
