@@ -7,7 +7,7 @@ from setuptools.command.test import test as TestCommand
 
 
 NAME = 'eip712-structs'
-VERSION = '1.0.0'
+VERSION = '1.0.0-test-fix'
 
 
 def get_file_lines(filename, split_lines=True):
