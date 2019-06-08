@@ -1,24 +1,34 @@
 import shlex
 import sys
+from pathlib import Path
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-from eip712_structs import name, version
+
+NAME = 'eip712-structs'
+VERSION = '1.0.0'
 
 
-def filter_empties(l):
-    return [i for i in l if i]
+def get_file_lines(filename, split_lines=True):
+    filetext = (Path(__file__).parent / filename).read_text().strip()
+    if split_lines:
+        filetext = filetext.split('\n')
+    return filetext
 
 
-with open('requirements.txt', 'r') as f:
-    install_requirements = filter_empties(f.readlines())
+def parse_requirements(filename):
+    """Return requirements from requirements file."""
+    # Ref: https://stackoverflow.com/a/42033122/
+    requirements = get_file_lines(filename)
+    requirements = [r.strip() for r in requirements]
+    requirements = [r for r in sorted(requirements) if r and not r.startswith('#')]
+    return requirements
 
-with open('test_requirements.txt', 'r') as f:
-    test_requirements = filter_empties(f.readlines())
 
-with open('README.md', 'r') as f:
-    long_description = f.read()
+install_requirements = parse_requirements('requirements.txt')
+test_requirements = parse_requirements('test_requirements.txt')
+long_description = get_file_lines('README.md', split_lines=False)
 
 
 class PyTest(TestCommand):
@@ -51,8 +61,8 @@ class CoverallsCommand(TestCommand):
 
 
 setup(
-    name=name,
-    version=version,
+    name=NAME,
+    version=VERSION,
     author='AJ Grubbs',
     packages=find_packages(),
     install_requires=install_requirements,
