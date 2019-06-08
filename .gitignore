@@ -1,4 +1,7 @@
+.eggs/
 *.egg-info/
 dist/
 build/
 .pytest_cache/
+
+tests/contracts/build

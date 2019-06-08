@@ -3,8 +3,9 @@ import random
 import string
 
 from eth_utils.crypto import keccak
+import pytest
 
-from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct, make_domain, struct_to_message
+from eip712_structs import Address, Array, Boolean, Bytes, Int, String, Uint, EIP712Struct, make_domain
 
 
 def signed_min_max(bits):
@@ -88,14 +89,17 @@ def test_encode_nested_structs():
     s2 = 'bar'
     s3 = 'baz'
 
+    sub_1 = SubStruct(s=s1)
+    sub_3 = SubStruct(s=s3)
+
     s = MainStruct(
-        sub_1=SubStruct(s=s1),
+        sub_1=sub_1,
         sub_2=s2,
-        sub_3=SubStruct(s=s3),
+        sub_3=sub_3,
     )
 
-    expected_result = b''.join(keccak(text=val) for val in [s1, s2, s3])
-    assert s.encode_value() == expected_result
+    expected_encoded_vals = b''.join([sub_1.hash_struct(), keccak(text=s2), sub_3.hash_struct()])
+    assert s.encode_value() == expected_encoded_vals
 
 
 def test_data_dicts():
@@ -137,7 +141,7 @@ def test_signable_bytes():
     exp_domain_bytes = keccak(domain.type_hash() + domain.encode_value())
     exp_struct_bytes = keccak(foo.type_hash() + foo.encode_value())
 
-    msg, sign_bytes = struct_to_message(foo, domain)
+    sign_bytes = foo.signable_bytes(domain)
     assert sign_bytes[0:2] == start_bytes
     assert sign_bytes[2:34] == exp_domain_bytes
     assert sign_bytes[34:] == exp_struct_bytes
@@ -155,3 +159,31 @@ def test_none_replacement():
     empty_string_hash = keccak(text='')
     assert encoded_val[0:32] == empty_string_hash
     assert encoded_val[32:] == bytes(32)
+
+
+def test_validation_errors():
+    bytes_type = Bytes(10)
+    int_type = Int(8)    # -128 <= i < 128
+    uint_type = Uint(8)  # 0 <= i < 256
+    bool_type = Boolean()
+
+    with pytest.raises(ValueError, match='bytes10 was given bytes with length 11'):
+        bytes_type.encode_value(os.urandom(11))
+
+    with pytest.raises(OverflowError, match='too big'):
+        int_type.encode_value(128)
+    with pytest.raises(OverflowError, match='too big'):
+        int_type.encode_value(-129)
+
+    with pytest.raises(OverflowError, match='too big'):
+        uint_type.encode_value(256)
+    assert uint_type.encode_value(0) == bytes(32)
+    with pytest.raises(OverflowError, match='negative int to unsigned'):
+        uint_type.encode_value(-1)
+
+    assert bool_type.encode_value(True) == bytes(31) + b'\x01'
+    assert bool_type.encode_value(False) == bytes(32)
+    with pytest.raises(ValueError, match='Must be True or False.'):
+        bool_type.encode_value(0)
+    with pytest.raises(ValueError, match='Must be True or False.'):
+        bool_type.encode_value(1)

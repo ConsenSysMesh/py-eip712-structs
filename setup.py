@@ -1,3 +1,4 @@
+import shlex
 import sys
 
 from setuptools import setup, find_packages
@@ -28,12 +29,24 @@ class PyTest(TestCommand):
         self.pytest_args = ""
 
     def run_tests(self):
-        import shlex
-
         # import here, cause outside the eggs aren't loaded
         import pytest
 
         errno = pytest.main(shlex.split(self.pytest_args))
+        sys.exit(errno)
+
+
+class CoverallsCommand(TestCommand):
+    description = 'Run the coveralls command'
+    user_options = [("coveralls-args=", "a", "Arguments to pass to coveralls")]
+
+    def initialize_options(self):
+        TestCommand.initialize_options(self)
+        self.coveralls_args = ""
+
+    def run_tests(self):
+        import coveralls.cli
+        errno = coveralls.cli.main(shlex.split(self.coveralls_args))
         sys.exit(errno)
 
 
@@ -43,7 +56,10 @@ setup(
     packages=find_packages(),
     install_requires=install_requirements,
     tests_require=test_requirements,
-    cmdclass={"test": PyTest},
+    cmdclass={
+        "test": PyTest,
+        "coveralls": CoverallsCommand,
+    },
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='MIT',

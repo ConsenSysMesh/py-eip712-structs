@@ -5,4 +5,10 @@ python:
   - "3.6"
   - "3.7"
 script:
-  - python setup.py test
+  - python setup.py test -a --cov=eip712_structs
+services:
+  - docker
+before_install:
+  - docker-compose up -d
+after_success:
+  - python setup.py coveralls
