@@ -3,5 +3,6 @@
 dist/
 build/
 .pytest_cache/
+.coverage
 
 tests/contracts/build

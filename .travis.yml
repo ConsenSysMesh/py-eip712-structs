@@ -12,3 +12,11 @@ before_install:
   - docker-compose up -d
 after_success:
   - python setup.py coveralls
+deploy:
+  provider: pypi
+  user: ajrgrubbs
+  password:
+    secure: USn2HOarmeVduJM/8SauQf3L/n+cj+QWhUD7uYVj69SvZsm3/NQkhGCdKX4qNhy/QOhGuIJ1qo2RCDLijyPgOCmee3Cz1SRxP4jkN3BdCCqlb5iVRZCSmu4/gp3d7qZyLfidyKMx63Ra7+DiWij6xKTSdPsRZ/3DZMApIrvUkQBqnsOsA+1ycIs8ASkTRymq7kVbTOn17uzPf3jBWHZFBynCY+qe5lC0Aa1N3y4l4jrzH6zGTIFnXjirpvvBRDoKBEIj5S/X25xwcKkJtFwAzigtM0EgVcU2FqVBplniNuLh8qZrmcqqIVNC+KbWCVLfD+dYT6yhFobOjjjalhZ13LITBLVO9YPQWHFHiEcDe1jz3+aPxuDOUmWqD/1e55QfypNIwJNGdcQ8WaqxxwzT1qClYCae5FFAS03Zct8AfxlMkPpfMudaD5642gzWcGVTBZg32GlW3Q6TEbTIlr+/CIyXjxjCndlr2A463kxl06FY4XsNcMC0A40p0Ygwq3Q09FQhk+ObIY2V8Zej8Mbat4b3EEO2bK4jmTK1V3r3EqUCPI+/JbsoCxAZNdTnoQfwlwgHCzclM02OKTFSTQuXs+b8zCn/fXCJivqnfWPzqQgoD1zAMwEN4DAY53dukPzcKdgTJ1TCcwKaIcxFu4UAjzYiCFx6nLetvLkpndu2cyE=
+  on:
+    tags: true
+  skip_existing: true
