@@ -53,6 +53,7 @@ class CoverallsCommand(TestCommand):
 setup(
     name=name,
     version=version,
+    author='AJ Grubbs',
     packages=find_packages(),
     install_requires=install_requirements,
     tests_require=test_requirements,
@@ -60,9 +61,10 @@ setup(
         "test": PyTest,
         "coveralls": CoverallsCommand,
     },
+    description='A python library for EIP712 objects',
     long_description=long_description,
     long_description_content_type='text/markdown',
     license='MIT',
-    keywords='ethereum eip712',
+    keywords='ethereum eip712 solidity',
     url='https://github.com/ajrgrubbs/py-eip712-structs',
 )
