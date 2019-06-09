@@ -7,28 +7,31 @@ from setuptools.command.test import test as TestCommand
 
 
 NAME = 'eip712-structs'
-VERSION = '1.0.1rc1'
+VERSION = '1.0.1rc2'
+
+install_requirements = [
+    'eth-utils==1.6.0',
+    'pysha3==1.0.2',
+]
+
+test_requirements = [
+    'coveralls==1.8.0',
+    'pytest==4.6.2',
+    'pytest-cov==2.7.1',
+    'web3==4.9.2',
+]
 
 
-def get_file_lines(filename, split_lines=True):
-    filetext = (Path(__file__).parent / filename).read_text().strip()
-    if split_lines:
-        filetext = filetext.split('\n')
-    return filetext
+def get_file_text(filename):
+    file_path = Path(__file__).parent / filename
+    if not file_path.exists():
+        return ''
+    else:
+        file_text = file_path.read_text().strip()
+        return file_text
 
 
-def parse_requirements(filename):
-    """Return requirements from requirements file."""
-    # Ref: https://stackoverflow.com/a/42033122/
-    requirements = get_file_lines(filename)
-    requirements = [r.strip() for r in requirements]
-    requirements = [r for r in sorted(requirements) if r and not r.startswith('#')]
-    return requirements
-
-
-install_requirements = parse_requirements('requirements.txt')
-test_requirements = parse_requirements('test_requirements.txt')
-long_description = get_file_lines('README.md', split_lines=False)
+long_description = get_file_text('README.md')
 
 
 class PyTest(TestCommand):
