@@ -1,24 +1,37 @@
 import shlex
 import sys
+from pathlib import Path
 
 from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 
-from eip712_structs import name, version
+
+NAME = 'eip712-structs'
+VERSION = '1.0.1'
+
+install_requirements = [
+    'eth-utils>=1.4.0',
+    'pysha3>=1.0.2',
+]
+
+test_requirements = [
+    'coveralls==1.8.0',
+    'pytest==4.6.2',
+    'pytest-cov==2.7.1',
+    'web3==4.9.2',
+]
 
 
-def filter_empties(l):
-    return [i for i in l if i]
+def get_file_text(filename):
+    file_path = Path(__file__).parent / filename
+    if not file_path.exists():
+        return ''
+    else:
+        file_text = file_path.read_text().strip()
+        return file_text
 
 
-with open('requirements.txt', 'r') as f:
-    install_requirements = filter_empties(f.readlines())
-
-with open('test_requirements.txt', 'r') as f:
-    test_requirements = filter_empties(f.readlines())
-
-with open('README.md', 'r') as f:
-    long_description = f.read()
+long_description = get_file_text('README.md')
 
 
 class PyTest(TestCommand):
@@ -51,8 +64,8 @@ class CoverallsCommand(TestCommand):
 
 
 setup(
-    name=name,
-    version=version,
+    name=NAME,
+    version=VERSION,
     author='AJ Grubbs',
     packages=find_packages(),
     install_requires=install_requirements,

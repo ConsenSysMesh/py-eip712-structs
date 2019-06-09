@@ -17,7 +17,12 @@ https://github.com/ethereum/EIPs/blob/master/EIPS/eip-712.md
 pip install eip712-structs
 ```
 
-## Quickstart
+## Usage
+See [API.md](API.md) for a succinct summary of available methods.
+
+Examples/Details below.
+
+#### Quickstart
 Say we want to represent the following struct, convert it to a message and sign it:
 ```text
 struct MyStruct {
@@ -47,6 +52,8 @@ my_msg = mine.to_message(domain)
 # Into signable bytes - domain required
 my_bytes = mine.signable_bytes(domain)
 ```
+
+See [Member Types](#member-types) for more information on supported types.
 
 #### Dynamic construction
 Attributes may be added dynamically as well. This may be necessary if you
@@ -175,7 +182,7 @@ struct_array = Array(MyStruct, 10)   # MyStruct[10] - again, don't instantiate s
 Contributions always welcome.
 
 Install dependencies:
-- `pip install -r requirements.txt -r test_requirements.txt`
+- `pip install -r requirements.txt`
 
 Run tests:
 - `python setup.py test`
@@ -187,7 +194,7 @@ Run tests:
     - Cleanup containers when you're done: `docker-compose down`
 
 Deploying a new version:
-- Set the version number in `eip712_structs/__init__.py`
+- Bump the version number in `setup.py`, commit it into master.
 - Make a release tag on the master branch in Github. Travis should handle the rest.
 
 
