@@ -1,3 +1,6 @@
+import functools
+import json
+import operator
 import re
 from collections import OrderedDict, defaultdict
 from typing import List, Tuple, NamedTuple
@@ -5,7 +8,7 @@ from typing import List, Tuple, NamedTuple
 from eth_utils.crypto import keccak
 
 import eip712_structs
-from eip712_structs.types import Array, EIP712Type, from_solidity_type
+from eip712_structs.types import Array, EIP712Type, from_solidity_type, BytesJSONEncoder
 
 
 class OrderedAttributesMeta(type):
@@ -180,6 +183,10 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         return result
 
+    def to_message_json(self, domain: 'EIP712Struct' = None) -> str:
+        message = self.to_message(domain)
+        return json.dumps(message, cls=BytesJSONEncoder)
+
     def signable_bytes(self, domain: 'EIP712Struct' = None) -> bytes:
         """Return a ``bytes`` object suitable for signing, as specified for EIP712.
 
@@ -250,6 +257,24 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         result = StructTuple(message=primary_result, domain=domain_result)
 
         return result
+
+    def __eq__(self, other):
+        if not other:
+            # Null check
+            return False
+        if self is other:
+            # Check identity
+            return True
+        if not isinstance(other, EIP712Struct):
+            # Check class
+            return False
+        # Our structs are considered equal if their type signature and encoded value signature match.
+        # E.g., like computing signable bytes but without a domain separator
+        return self.encode_type() == other.encode_type() and self.encode_value() == other.encode_value()
+
+    def __hash__(self):
+        value_hashes = [hash(k) ^ hash(v) for k, v in self.values.items()]
+        return functools.reduce(operator.xor, value_hashes, hash(self.type_name))
 
 
 class StructTuple(NamedTuple):

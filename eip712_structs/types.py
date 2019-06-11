@@ -1,8 +1,9 @@
 import re
+from json import JSONEncoder
 from typing import Any, Union, Type
 
 from eth_utils.crypto import keccak
-from eth_utils.conversions import to_int
+from eth_utils.conversions import to_bytes, to_hex, to_int
 
 
 class EIP712Type:
@@ -124,6 +125,10 @@ class Bytes(EIP712Type):
 
     def _encode_value(self, value):
         """Static bytesN types are encoded by right-padding to 32 bytes. Dynamic bytes types are keccak256 hashed."""
+        if isinstance(value, str):
+            # Try converting to a bytestring, assuming that it's been given as hex
+            value = to_bytes(hexstr=value)
+
         if self.length == 0:
             return keccak(value)
         else:
@@ -229,3 +234,11 @@ def from_solidity_type(solidity_type: str):
         return result
     else:
         return type_instance
+
+
+class BytesJSONEncoder(JSONEncoder):
+    def default(self, o):
+        if isinstance(o, bytes):
+            return to_hex(o)
+        else:
+            return super(BytesJSONEncoder, self).default(o)

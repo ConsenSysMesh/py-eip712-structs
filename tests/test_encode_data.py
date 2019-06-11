@@ -187,3 +187,44 @@ def test_validation_errors():
         bool_type.encode_value(0)
     with pytest.raises(ValueError, match='Must be True or False.'):
         bool_type.encode_value(1)
+
+
+def test_struct_eq():
+    class Foo(EIP712Struct):
+        s = String()
+    foo = Foo(s='hello world')
+    foo_copy = Foo(s='hello world')
+    foo_2 = Foo(s='blah')
+
+    assert foo == foo
+    assert foo is not foo_copy
+    assert foo == foo_copy
+    assert foo != foo_2
+
+    def make_different_foo():
+        # We want another struct defined with the same name but different member types
+        class Foo(EIP712Struct):
+            b = Bytes()
+        return Foo
+
+    def make_same_foo():
+        # For good measure, recreate the exact same class and ensure they can still compare
+        class Foo(EIP712Struct):
+            s = String()
+        return Foo
+
+    OtherFooClass = make_different_foo()
+    wrong_type = OtherFooClass(b=b'hello world')
+    assert wrong_type != foo
+    assert OtherFooClass != Foo
+
+    SameFooClass = make_same_foo()
+    right_type = SameFooClass(s='hello world')
+    assert right_type == foo
+    assert SameFooClass != Foo
+
+    # Different name, same members
+    class Bar(EIP712Struct):
+        s = String()
+    bar = Bar(s='hello world')
+    assert bar != foo
