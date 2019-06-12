@@ -187,3 +187,21 @@ def test_validation_errors():
         bool_type.encode_value(0)
     with pytest.raises(ValueError, match='Must be True or False.'):
         bool_type.encode_value(1)
+
+
+def test_value_access():
+    class Foo(EIP712Struct):
+        s = String()
+        b = Bytes(32)
+
+    test_str = 'hello world'
+    test_bytes = os.urandom(32)
+    foo = Foo(s=test_str, b=test_bytes)
+
+    assert foo['s'] == test_str
+    assert foo['b'] == test_bytes
+
+    test_bytes_2 = os.urandom(32)
+    foo['b'] = test_bytes_2
+
+    assert foo['b'] == test_bytes_2

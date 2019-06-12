@@ -251,6 +251,17 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         return result
 
+    def __getitem__(self, key):
+        """Provide access directly to the underlying value dictionary"""
+        return self.values.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        """Provide access directly to the underlying value dictionary"""
+        return self.values.__setitem__(key, value)
+
+    def __delete__(self, instance):
+        raise TypeError('Deleting entries from an EIP712Struct is not allowed.')
+
 
 class StructTuple(NamedTuple):
     message: EIP712Struct
