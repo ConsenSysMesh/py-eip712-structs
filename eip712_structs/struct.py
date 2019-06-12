@@ -251,12 +251,40 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         return result
 
+    @classmethod
+    def _assert_key_is_member(cls, key):
+        member_names = {tup[0] for tup in cls.get_members()}
+        if key not in member_names:
+            raise KeyError(f'"{key}" is not defined for this struct.')
+
+    @classmethod
+    def _assert_property_type(cls, key, value):
+        """Eagerly check for a correct member type"""
+        members = dict(cls.get_members())
+        typ = members[key]
+
+        if isinstance(typ, type) and issubclass(typ, EIP712Struct):
+            # We expect an EIP712Struct instance. Assert that's true, and check the struct signature too.
+            if not isinstance(value, EIP712Struct) or value._encode_type(False) != typ._encode_type(False):
+                raise ValueError(f'Given value is of type {type(value)}, but we expected {typ}')
+        else:
+            # Since it isn't a nested struct, its an EIP712Type
+            try:
+                typ.encode_value(value)
+            except Exception as e:
+                raise ValueError(f'The python type {type(value)} does not appear '
+                                 f'to be supported for data type {typ}.') from e
+
     def __getitem__(self, key):
         """Provide access directly to the underlying value dictionary"""
+        self._assert_key_is_member(key)
         return self.values.__getitem__(key)
 
     def __setitem__(self, key, value):
         """Provide access directly to the underlying value dictionary"""
+        self._assert_key_is_member(key)
+        self._assert_property_type(key, value)
+
         return self.values.__setitem__(key, value)
 
     def __delete__(self, instance):
