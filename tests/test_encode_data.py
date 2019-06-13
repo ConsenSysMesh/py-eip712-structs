@@ -240,3 +240,6 @@ def test_value_access():
     with pytest.raises(ValueError):
         # Expects a Foo type, so should throw an error
         bar['f'] = baz
+
+    with pytest.raises(TypeError):
+        del foo['s']

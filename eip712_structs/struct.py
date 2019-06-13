@@ -287,7 +287,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         return self.values.__setitem__(key, value)
 
-    def __delete__(self, instance):
+    def __delitem__(self, _):
         raise TypeError('Deleting entries from an EIP712Struct is not allowed.')
 
 
