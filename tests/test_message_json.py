@@ -1,6 +1,8 @@
 import json
 import os
 
+import pytest
+
 from eip712_structs import EIP712Struct, String, make_domain, Bytes
 
 
@@ -125,3 +127,12 @@ def test_bytes_json_encoder():
     reconstructed = EIP712Struct.from_message(json.loads(result))
     assert reconstructed.domain == domain
     assert reconstructed.message == foo
+
+    class UnserializableObject:
+        pass
+    obj = UnserializableObject()
+
+    # Fabricate this failure case to test that the custom json encoder's fallback path works as expected.
+    foo.values['b'] = obj
+    with pytest.raises(TypeError, match='not JSON serializable'):
+        foo.to_message_json(domain)
