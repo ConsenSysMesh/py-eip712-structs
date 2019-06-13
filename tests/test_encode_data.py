@@ -196,6 +196,9 @@ def test_struct_eq():
     foo_copy = Foo(s='hello world')
     foo_2 = Foo(s='blah')
 
+
+    assert foo != None
+    assert foo != 'unrelated type'
     assert foo == foo
     assert foo is not foo_copy
     assert foo == foo_copy
