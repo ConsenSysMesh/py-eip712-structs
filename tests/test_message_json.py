@@ -1,4 +1,9 @@
-from eip712_structs import EIP712Struct, String, make_domain
+import json
+import os
+
+import pytest
+
+from eip712_structs import EIP712Struct, String, make_domain, Bytes
 
 
 def test_flat_struct_to_message():
@@ -105,3 +110,29 @@ def test_nested_struct_to_message():
     assert bar_val.get_data_value('s') == 'bar'
 
     assert foo.hash_struct() == new_struct.hash_struct()
+
+
+def test_bytes_json_encoder():
+    class Foo(EIP712Struct):
+        b = Bytes(32)
+    domain = make_domain(name='domain')
+
+    bytes_val = os.urandom(32)
+    foo = Foo(b=bytes_val)
+    result = foo.to_message_json(domain)
+
+    expected_substring = f'"b": "0x{bytes_val.hex()}"'
+    assert expected_substring in result
+
+    reconstructed = EIP712Struct.from_message(json.loads(result))
+    assert reconstructed.domain == domain
+    assert reconstructed.message == foo
+
+    class UnserializableObject:
+        pass
+    obj = UnserializableObject()
+
+    # Fabricate this failure case to test that the custom json encoder's fallback path works as expected.
+    foo.values['b'] = obj
+    with pytest.raises(TypeError, match='not JSON serializable'):
+        foo.to_message_json(domain)
