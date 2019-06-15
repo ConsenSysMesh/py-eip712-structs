@@ -1,3 +1,6 @@
+import functools
+import json
+import operator
 import re
 from collections import OrderedDict, defaultdict
 from typing import List, Tuple, NamedTuple
@@ -5,7 +8,7 @@ from typing import List, Tuple, NamedTuple
 from eth_utils.crypto import keccak
 
 import eip712_structs
-from eip712_structs.types import Array, EIP712Type, from_solidity_type
+from eip712_structs.types import Array, EIP712Type, from_solidity_type, BytesJSONEncoder
 
 
 class OrderedAttributesMeta(type):
@@ -180,6 +183,10 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         return result
 
+    def to_message_json(self, domain: 'EIP712Struct' = None) -> str:
+        message = self.to_message(domain)
+        return json.dumps(message, cls=BytesJSONEncoder)
+
     def signable_bytes(self, domain: 'EIP712Struct' = None) -> bytes:
         """Return a ``bytes`` object suitable for signing, as specified for EIP712.
 
@@ -250,6 +257,63 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         result = StructTuple(message=primary_result, domain=domain_result)
 
         return result
+
+    @classmethod
+    def _assert_key_is_member(cls, key):
+        member_names = {tup[0] for tup in cls.get_members()}
+        if key not in member_names:
+            raise KeyError(f'"{key}" is not defined for this struct.')
+
+    @classmethod
+    def _assert_property_type(cls, key, value):
+        """Eagerly check for a correct member type"""
+        members = dict(cls.get_members())
+        typ = members[key]
+
+        if isinstance(typ, type) and issubclass(typ, EIP712Struct):
+            # We expect an EIP712Struct instance. Assert that's true, and check the struct signature too.
+            if not isinstance(value, EIP712Struct) or value._encode_type(False) != typ._encode_type(False):
+                raise ValueError(f'Given value is of type {type(value)}, but we expected {typ}')
+        else:
+            # Since it isn't a nested struct, its an EIP712Type
+            try:
+                typ.encode_value(value)
+            except Exception as e:
+                raise ValueError(f'The python type {type(value)} does not appear '
+                                 f'to be supported for data type {typ}.') from e
+
+    def __getitem__(self, key):
+        """Provide access directly to the underlying value dictionary"""
+        self._assert_key_is_member(key)
+        return self.values.__getitem__(key)
+
+    def __setitem__(self, key, value):
+        """Provide access directly to the underlying value dictionary"""
+        self._assert_key_is_member(key)
+        self._assert_property_type(key, value)
+
+        return self.values.__setitem__(key, value)
+
+    def __delitem__(self, _):
+        raise TypeError('Deleting entries from an EIP712Struct is not allowed.')
+
+    def __eq__(self, other):
+        if not other:
+            # Null check
+            return False
+        if self is other:
+            # Check identity
+            return True
+        if not isinstance(other, EIP712Struct):
+            # Check class
+            return False
+        # Our structs are considered equal if their type signature and encoded value signature match.
+        # E.g., like computing signable bytes but without a domain separator
+        return self.encode_type() == other.encode_type() and self.encode_value() == other.encode_value()
+
+    def __hash__(self):
+        value_hashes = [hash(k) ^ hash(v) for k, v in self.values.items()]
+        return functools.reduce(operator.xor, value_hashes, hash(self.type_name))
 
 
 class StructTuple(NamedTuple):
