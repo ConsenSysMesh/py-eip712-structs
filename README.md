@@ -46,8 +46,17 @@ class MyStruct(EIP712Struct):
 # Create an instance with some data
 mine = MyStruct(some_string='hello world', some_number=1234)
 
-# Into a message dict (serializable to JSON) - domain required
+# Values can be get/set dictionary-style:
+mine['some_number'] = 4567
+assert mine['some_string'] == 'hello world'
+assert mine['some_number'] == 4567
+
+# Into a message dict - domain required
 my_msg = mine.to_message(domain)
+
+# Into message JSON - domain required.
+# This method converts bytes types for you, which the default JSON encoder won't handle.
+my_msg_json = mine.to_message_json(domain)
 
 # Into signable bytes - domain required
 my_bytes = mine.signable_bytes(domain)
@@ -66,6 +75,9 @@ class Message(EIP712Struct):
 
 Message.to = Address()
 setattr(Message, 'from', Address())
+
+# At this point, Message is equivalent to `struct Message { address to; address from; }`
+
 ```
 
 #### The domain separator
