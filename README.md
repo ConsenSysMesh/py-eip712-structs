@@ -1,4 +1,4 @@
-# EIP-712 Structs  [![Build Status](https://travis-ci.org/ajrgrubbs/py-eip712-structs.svg?branch=master)](https://travis-ci.org/ajrgrubbs/py-eip712-structs) [![Coverage Status](https://coveralls.io/repos/github/ajrgrubbs/py-eip712-structs/badge.svg?branch=master)](https://coveralls.io/github/ajrgrubbs/py-eip712-structs?branch=master)
+# EIP-712 Structs  [![Build Status](https://travis-ci.org/ConsenSys/py-eip712-structs.svg?branch=master)](https://travis-ci.org/ConsenSys/py-eip712-structs) [![Coverage Status](https://coveralls.io/repos/github/ConsenSys/py-eip712-structs/badge.svg?branch=master)](https://coveralls.io/github/ConsenSys/py-eip712-structs?branch=master)
 
 A python interface for simple EIP-712 struct construction.
 
@@ -211,4 +211,4 @@ Deploying a new version:
 
 
 ## Shameless Plug
-Written by [ConsenSys](https://consensys.net) for ourselves and the community! :heart:
+Written by [ConsenSys](https://consensys.net) for the world! :heart:
