@@ -79,5 +79,5 @@ setup(
     long_description_content_type='text/markdown',
     license='MIT',
     keywords='ethereum eip712 solidity',
-    url='https://github.com/ajrgrubbs/py-eip712-structs',
+    url='https://github.com/ConsenSys/py-eip712-structs',
 )
