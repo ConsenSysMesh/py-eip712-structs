@@ -26,9 +26,9 @@ def contract(w3):
     with open(f'{base_path}.abi', 'r') as f:
         abi = f.read()
     with open(f'{base_path}.bin', 'r') as f:
-        bin = f.read()
+        bytecode = f.read()
 
-    tmp_contract = w3.eth.contract(abi=abi, bytecode=bin)
+    tmp_contract = w3.eth.contract(abi=abi, bytecode=bytecode)
     deploy_hash = tmp_contract.constructor().transact()
     deploy_receipt = w3.eth.waitForTransactionReceipt(deploy_hash)
 

@@ -3,15 +3,23 @@ version: "3"
 services:
   ganache:
     image: "trufflesuite/ganache-cli:latest"
-    # Corresponding account address: 0xD68D840e1e971750E6d45049ff579925456d5893
     command: "--account=\"0x3660582119566511de16f4dcf397fa324b27bd6247f653cf0298a0993f3432ed,100000000000000000000\""
     ports:
       - "8545:8545"
     depends_on:
       - compiler
+    labels:
+      net.consensys.description: >
+        Starts an instance of ganache-cli for chain parity tests.
+        Unlocks address 0xD68D840e1e971750E6d45049ff579925456d5893"
 
   compiler:
     image: "ethereum/solc:stable"
     command: "--abi --bin -o /tmp/contracts/build --overwrite /tmp/contracts/hash_test_contract.sol"
     volumes:
       - ./tests/contracts:/tmp/contracts
+    labels:
+      net.consensys.description: >
+        Compiles ./tests/contracts/hash_test_contract.sol. Places generated files in ./tests/contracts/build/.
+        Generates JSON ABI and Bytecode hex: TestContract.abi, TestContract.bin.
+        See ./tests/test_chain_parity.py::contract to see how this is deployed.
