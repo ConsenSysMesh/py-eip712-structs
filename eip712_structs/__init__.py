@@ -1,5 +1,3 @@
-from eip712_structs.domain_separator import make_domain
-from eip712_structs.struct import EIP712Struct
-from eip712_structs.types import Address, Array, Boolean, Bytes, Int, String, Uint
-
-default_domain = None
+from .types import Address, Array, Boolean, Bytes, Int, String, Uint  # noqa: W0611
+from .struct import EIP712Struct  # noqa: W0611
+from .domain_separator import make_domain  # noqa: W0611

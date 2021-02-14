@@ -1,9 +1,9 @@
 import re
 from json import JSONEncoder
-from typing import Any, Union, Type
+from typing import Union, Type
 
-from eth_utils.crypto import keccak
-from eth_utils.conversions import to_bytes, to_hex, to_int
+from eth_utils.crypto import keccak  # type: ignore
+from eth_utils.conversions import to_bytes, to_hex, to_int, HexStr  # type: ignore
 
 
 class EIP712Type:
@@ -11,9 +11,8 @@ class EIP712Type:
 
     Generally you wouldn't use this - instead, see the subclasses below. Or you may want an EIP712Struct instead.
     """
-    def __init__(self, type_name: str, none_val: Any):
+    def __init__(self, type_name: str):
         self.type_name = type_name
-        self.none_val = none_val
 
     def encode_value(self, value) -> bytes:
         """Given a value, verify it and convert into the format required by the spec.
@@ -21,10 +20,7 @@ class EIP712Type:
         :param value: A correct input value for the implemented type.
         :return: A 32-byte object containing encoded data
         """
-        if value is None:
-            return self._encode_value(self.none_val)
-        else:
-            return self._encode_value(value)
+        return self._encode_value(value)
 
     def _encode_value(self, value) -> bytes:
         """Must be implemented by subclasses, handles value encoding on a case-by-case basis.
@@ -59,7 +55,7 @@ class Array(EIP712Type):
             type_name = f'{member_type.type_name}[{fixed_length}]'
         self.member_type = member_type
         self.fixed_length = fixed_length
-        super(Array, self).__init__(type_name, [])
+        super(Array, self).__init__(type_name)
 
     def _encode_value(self, value):
         """Arrays are encoded by concatenating their encoded contents, and taking the keccak256 hash."""
@@ -71,7 +67,7 @@ class Array(EIP712Type):
 class Address(EIP712Type):
     def __init__(self):
         """Represents an ``address`` type."""
-        super(Address, self).__init__('address', 0)
+        super(Address, self).__init__('address')
 
     def _encode_value(self, value):
         """Addresses are encoded like Uint160 numbers."""
@@ -80,7 +76,7 @@ class Address(EIP712Type):
         if isinstance(value, bytes):
             v = to_int(value)
         elif isinstance(value, str):
-            v = to_int(hexstr=value)
+            v = to_int(hexstr=HexStr(value))
         else:
             v = value  # Fallback, just use it as-is.
         return Uint(160).encode_value(v)
@@ -89,7 +85,7 @@ class Address(EIP712Type):
 class Boolean(EIP712Type):
     def __init__(self):
         """Represents a ``bool`` type."""
-        super(Boolean, self).__init__('bool', False)
+        super(Boolean, self).__init__('bool')
 
     def _encode_value(self, value):
         """Booleans are encoded like the uint256 values of 0 and 1."""
@@ -121,13 +117,17 @@ class Bytes(EIP712Type):
         else:
             raise ValueError(f'Byte length must be between 1 or 32. Got: {length}')
         self.length = length
-        super(Bytes, self).__init__(type_name, b'')
+        super(Bytes, self).__init__(type_name)
 
     def _encode_value(self, value):
         """Static bytesN types are encoded by right-padding to 32 bytes. Dynamic bytes types are keccak256 hashed."""
         if isinstance(value, str):
             # Try converting to a bytestring, assuming that it's been given as hex
-            value = to_bytes(hexstr=value)
+            if value.startswith('0x'):
+                value = value[2:]
+            else:
+                raise ValueError(f'{self.type_name} was given an invalid hex string, not starting with "0x"')
+            value = to_bytes(hexstr=HexStr(value))
 
         if self.length == 0:
             return keccak(value)
@@ -151,7 +151,7 @@ class Int(EIP712Type):
         if length < 8 or length > 256 or length % 8 != 0:
             raise ValueError(f'Int length must be a multiple of 8, between 8 and 256. Got: {length}')
         self.length = length
-        super(Int, self).__init__(f'int{length}', 0)
+        super(Int, self).__init__(f'int{length}')
 
     def _encode_value(self, value: int):
         """Ints are encoded by padding them to 256-bit representations."""
@@ -162,7 +162,7 @@ class Int(EIP712Type):
 class String(EIP712Type):
     def __init__(self):
         """Represents a string type."""
-        super(String, self).__init__('string', '')
+        super(String, self).__init__('string')
 
     def _encode_value(self, value):
         """Strings are encoded by taking the keccak256 hash of their contents."""
@@ -182,7 +182,7 @@ class Uint(EIP712Type):
         if length < 8 or length > 256 or length % 8 != 0:
             raise ValueError(f'Uint length must be a multiple of 8, between 8 and 256. Got: {length}')
         self.length = length
-        super(Uint, self).__init__(f'uint{length}', 0)
+        super(Uint, self).__init__(f'uint{length}')
 
     def _encode_value(self, value: int):
         """Uints are encoded by padding them to 256-bit representations."""

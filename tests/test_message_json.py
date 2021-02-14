@@ -45,7 +45,7 @@ def test_flat_struct_to_message():
     assert members_list[0][0] == 's'
     assert members_list[0][1].type_name == 'string'
 
-    assert new_struct.get_data_value('s') == 'foobar'
+    assert new_struct['s'] == 'foobar'
 
 
 def test_nested_struct_to_message():
@@ -105,11 +105,86 @@ def test_nested_struct_to_message():
     assert members[0][0] == 's' and members[0][1].type_name == 'string'
     assert members[1][0] == 'bar' and members[1][1].type_name == 'Bar'
 
-    bar_val = new_struct.get_data_value('bar')
+    bar_val = new_struct['bar']
     assert bar_val.type_name == 'Bar'
-    assert bar_val.get_data_value('s') == 'bar'
+    assert bar_val['s'] == 'bar'
 
     assert foo.hash_struct() == new_struct.hash_struct()
+
+
+def test_missing_field_from_message_error():
+    message = {
+        'primaryType': 'Foo',
+        'types': {
+            'EIP712Domain': [{
+                'name': 'name',
+                'type': 'string',
+            }],
+            'Foo': [{
+                'name': 's',
+                'type': 'string',
+            }]
+        },
+        'domain': {
+            'name': 'domain',
+        },
+        'message': {
+        }
+    }
+
+    with pytest.raises(KeyError):
+        EIP712Struct.from_message(message)
+
+
+def test_null_field_from_message_error():
+    message = {
+        'primaryType': 'Foo',
+        'types': {
+            'EIP712Domain': [{
+                'name': 'name',
+                'type': 'string',
+            }],
+            'Foo': [{
+                'name': 's',
+                'type': 'string',
+            }]
+        },
+        'domain': {
+            'name': 'domain',
+        },
+        'message': {
+            's': None,
+        }
+    }
+
+    with pytest.raises(ValueError):
+        EIP712Struct.from_message(message)
+
+
+def test_extra_field_from_message_error():
+    message = {
+        'primaryType': 'Foo',
+        'types': {
+            'EIP712Domain': [{
+                'name': 'name',
+                'type': 'string',
+            }],
+            'Foo': [{
+                'name': 's',
+                'type': 'string',
+            }]
+        },
+        'domain': {
+            'name': 'domain',
+        },
+        'message': {
+            's': 'x',
+            'undeclared_field': 'y',
+        }
+    }
+
+    with pytest.raises(KeyError):
+        EIP712Struct.from_message(message)
 
 
 def test_bytes_json_encoder():
@@ -136,3 +211,22 @@ def test_bytes_json_encoder():
     foo.values['b'] = obj
     with pytest.raises(TypeError, match='not JSON serializable'):
         foo.to_message_json(domain)
+
+
+def test_wrong_domain_type():
+    message = {  # invalid salt
+        'types': {
+            'EIP712Domain': [
+                {'name': 'salt', 'type': 'string'}  # This is the wrong type
+            ],
+            'Foo': [{
+                'name': 's',
+                'type': 'string',
+            }]
+        },
+        'primaryType': 'Foo',
+        'domain': {'salt': 'rAnD0mstr1ng'},
+        'message': {'s': 'foobar'},
+    }
+    with pytest.raises(ValueError):
+        EIP712Struct.from_message(message)

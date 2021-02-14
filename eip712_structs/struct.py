@@ -3,12 +3,11 @@ import json
 import operator
 import re
 from collections import OrderedDict, defaultdict
-from typing import List, Tuple, NamedTuple
+from typing import List, Tuple, NamedTuple, Set, Optional
 
-from eth_utils.crypto import keccak
+from eth_utils.crypto import keccak  # type: ignore
 
-import eip712_structs
-from eip712_structs.types import Array, EIP712Type, from_solidity_type, BytesJSONEncoder
+from .types import Array, String, Uint, Address, Bytes, EIP712Type, from_solidity_type, BytesJSONEncoder
 
 
 class OrderedAttributesMeta(type):
@@ -30,15 +29,26 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
 
         struct_instance = MyStruct(some_param='some_value')
     """
+    DOMAIN_TYPES = dict(
+        name=String(),
+        version=String(),
+        chainId=Uint(256),
+        verifyingContract=Address(),
+        salt=Bytes(32),
+    )
+
     def __init__(self, **kwargs):
-        super(EIP712Struct, self).__init__(self.type_name, None)
+        super(EIP712Struct, self).__init__(self.type_name)
         members = self.get_members()
         self.values = dict()
         for name, typ in members:
-            value = kwargs.get(name)
+            value = kwargs.pop(name)
             if isinstance(value, dict):
                 value = typ(**value)
-            self.values[name] = value
+            self._setitem(name, value)
+        # make sure no unexpected values are passed
+        for name in kwargs:
+            self._assert_key_is_member(name)
 
     @classmethod
     def __init_subclass__(cls, **kwargs):
@@ -57,23 +67,12 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         for name, typ in self.get_members():
             if isinstance(typ, type) and issubclass(typ, EIP712Struct):
                 # Nested structs are recursively hashed, with the resulting 32-byte hash appended to the list of values
-                sub_struct = self.get_data_value(name)
+                sub_struct = self[name]
                 encoded_values.append(sub_struct.hash_struct())
             else:
                 # Regular types are encoded as normal
                 encoded_values.append(typ.encode_value(self.values[name]))
         return b''.join(encoded_values)
-
-    def get_data_value(self, name):
-        """Get the value of the given struct parameter.
-        """
-        return self.values.get(name)
-
-    def set_data_value(self, name, value):
-        """Set the value of the given struct parameter.
-        """
-        if name in self.values:
-            self.values[name] = value
 
     def data_dict(self):
         """Provide the entire data dictionary representing the struct.
@@ -94,7 +93,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         struct_sig = f'{cls.type_name}({",".join(member_sigs)})'
 
         if resolve_references:
-            reference_structs = set()
+            reference_structs: Set[EIP712Type] = set()
             cls._gather_reference_structs(reference_structs)
             sorted_structs = sorted(list(s for s in reference_structs if s != cls), key=lambda s: s.type_name)
             for struct in sorted_structs:
@@ -142,11 +141,10 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         return members
 
     @staticmethod
-    def _assert_domain(domain):
-        result = domain or eip712_structs.default_domain
-        if not result:
-            raise ValueError('Domain must be provided, or eip712_structs.default_domain must be set.')
-        return result
+    def _assert_domain(domain: Optional['EIP712Struct']) -> 'EIP712Struct':
+        if not domain:
+            raise ValueError('Domain must be provided.')
+        return domain
 
     def to_message(self, domain: 'EIP712Struct' = None) -> dict:
         """Convert a struct into a dictionary suitable for messaging.
@@ -162,7 +160,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
             :returns: This struct + the domain in dict form, structured as specified for EIP712 messages.
             """
         domain = self._assert_domain(domain)
-        structs = {domain, self}
+        structs: Set[EIP712Struct] = {domain, self}
         self._gather_reference_structs(structs)
 
         # Build type dictionary
@@ -187,13 +185,13 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         message = self.to_message(domain)
         return json.dumps(message, cls=BytesJSONEncoder)
 
-    def signable_bytes(self, domain: 'EIP712Struct' = None) -> bytes:
+    def signable_bytes(self, domain: 'EIP712Struct') -> bytes:
         """Return a ``bytes`` object suitable for signing, as specified for EIP712.
 
         As per the spec, bytes are constructed as follows:
             ``b'\x19\x01' + domain_hash_bytes + struct_hash_bytes``
 
-        :param domain: The domain to include in the hash bytes. If None, uses ``eip712_structs.default_domain``
+        :param domain: The domain to include in the hash bytes.``
         :return: The bytes object
         """
         domain = self._assert_domain(domain)
@@ -219,6 +217,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         unfulfilled_struct_params = defaultdict(list)
 
         for type_name in message_dict['types']:
+            is_domain = type_name == 'EIP712Domain'
             # Dynamically construct struct class from dict representation
             StructFromJSON = type(type_name, (EIP712Struct,), {})
 
@@ -226,6 +225,10 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
                 # Either a basic solidity type is set, or None if referring to a reference struct (we'll fill it later)
                 member_name = member['name']
                 member_sol_type = from_solidity_type(member['type'])
+                if is_domain:
+                    if member_sol_type is None:
+                        raise ValueError(f'Unknown type for {member_name}: {member["type"]}')
+                    cls._assert_domain_type(member_name, member_sol_type)
                 setattr(StructFromJSON, member_name, member_sol_type)
                 if member_sol_type is None:
                     # Track the refs we'll need to set later.
@@ -240,6 +243,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
             struct_class = structs[struct_name]
             for name, type_name in unfulfilled_member_names:
                 match = re.match(regex_pattern, type_name)
+                assert match
                 base_type_name = match.group(1)
                 ref_struct = structs[base_type_name]
                 if match.group(2):
@@ -282,20 +286,30 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
                 raise ValueError(f'The python type {type(value)} does not appear '
                                  f'to be supported for data type {typ}.') from e
 
+    @classmethod
+    def _assert_domain_type(cls, member_name, member_type):
+        expected_type = cls.DOMAIN_TYPES[member_name]
+        if member_type != expected_type:
+            raise ValueError(f'Expected {member_name} to be of type {expected_type.type_name}, '
+                             'got {member_type.type_name}')
+
     def __getitem__(self, key):
         """Provide access directly to the underlying value dictionary"""
         self._assert_key_is_member(key)
         return self.values.__getitem__(key)
 
     def __setitem__(self, key, value):
+        raise TypeError('Setting entries on an EIP712Struct is not allowed.')
+
+    def __delitem__(self, _):
+        raise TypeError('Deleting entries from an EIP712Struct is not allowed.')
+
+    def _setitem(self, key, value):
         """Provide access directly to the underlying value dictionary"""
         self._assert_key_is_member(key)
         self._assert_property_type(key, value)
 
         return self.values.__setitem__(key, value)
-
-    def __delitem__(self, _):
-        raise TypeError('Deleting entries from an EIP712Struct is not allowed.')
 
     def __eq__(self, other):
         if not other:

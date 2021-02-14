@@ -66,6 +66,17 @@ def test_encode_basic_types():
     assert encoded_bytes == expected_data
 
 
+def test_encode_bytes():
+    class TestStruct(EIP712Struct):
+        b = Bytes(4)
+
+    s1 = TestStruct(b='0xffee')
+    s2 = TestStruct(b=b'\xff\xee')
+    assert s1.encode_value() == s2.encode_value()
+    with pytest.raises(ValueError):
+        TestStruct(b='0xffffffffff')  # too long
+
+
 def test_encode_array():
     class TestStruct(EIP712Struct):
         byte_array = Array(Bytes(32), 4)
@@ -147,18 +158,26 @@ def test_signable_bytes():
     assert sign_bytes[34:] == exp_struct_bytes
 
 
-def test_none_replacement():
+def test_missing_and_extra_values_errors():
     class Foo(EIP712Struct):
         s = String()
         i = Int(256)
 
-    foo = Foo(**{})
-    encoded_val = foo.encode_value()
-    assert len(encoded_val) == 64
-
-    empty_string_hash = keccak(text='')
-    assert encoded_val[0:32] == empty_string_hash
-    assert encoded_val[32:] == bytes(32)
+    # missing fields
+    with pytest.raises(KeyError):
+        Foo()
+    with pytest.raises(KeyError):
+        Foo(s='x')
+    with pytest.raises(KeyError):
+        Foo(i=8)
+    # None values
+    with pytest.raises(ValueError):
+        Foo(s="x", i=None)
+    with pytest.raises(ValueError):
+        Foo(s=None, i=8)
+    # extra undeclared fields
+    with pytest.raises(KeyError):
+        Foo(s='x', i=8, undeclared=0)
 
 
 def test_validation_errors():
@@ -196,7 +215,7 @@ def test_struct_eq():
     foo_copy = Foo(s='hello world')
     foo_2 = Foo(s='blah')
 
-    assert foo != None
+    assert foo != None  # noqa
     assert foo != 'unrelated type'
     assert foo == foo
     assert foo is not foo_copy
@@ -244,28 +263,9 @@ def test_value_access():
     assert foo['s'] == test_str
     assert foo['b'] == test_bytes
 
-    test_bytes_2 = os.urandom(32)
-    foo['b'] = test_bytes_2
-
-    assert foo['b'] == test_bytes_2
-
-    with pytest.raises(KeyError):
-        foo['x'] = 'unacceptable'
-
     # Check behavior when accessing a member that wasn't defined for the struct.
     with pytest.raises(KeyError):
-        foo['x']
-    # Lets cheat a lil bit for robustness- add an invalid 'x' member to the value dict, and check the error still raises
-    foo.values['x'] = 'test'
-    with pytest.raises(KeyError):
-        foo['x']
-    foo.values.pop('x')
-
-    with pytest.raises(ValueError):
-        foo['s'] = b'unacceptable'
-    with pytest.raises(ValueError):
-        # Bytes do accept strings, but it has to be hex formatted.
-        foo['b'] = 'unacceptable'
+        foo['x']  # noqa
 
     # Test behavior when attempting to set nested structs as values
     class Bar(EIP712Struct):
@@ -276,13 +276,14 @@ def test_value_access():
         s = String()
     baz = Baz(s=test_str)
 
-    bar = Bar(s=test_str)
-    bar['f'] = foo
+    bar = Bar(s=test_str, f=foo)
     assert bar['f'] == foo
 
     with pytest.raises(ValueError):
         # Expects a Foo type, so should throw an error
-        bar['f'] = baz
+        Bar(s=test_str, f=baz)
 
+    with pytest.raises(TypeError):
+        foo['s'] = ''
     with pytest.raises(TypeError):
         del foo['s']

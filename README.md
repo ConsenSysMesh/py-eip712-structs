@@ -1,5 +1,21 @@
 # EIP-712 Structs  [![Build Status](https://travis-ci.org/ConsenSys/py-eip712-structs.svg?branch=master)](https://travis-ci.org/ConsenSys/py-eip712-structs) [![Coverage Status](https://coveralls.io/repos/github/ConsenSys/py-eip712-structs/badge.svg?branch=master)](https://coveralls.io/github/ConsenSys/py-eip712-structs?branch=master)
 
+## CURV NOTES
+
+We took this library from https://github.com/ConsenSys/py-eip712-structs (at revision b05c1dfe073644ceef1b339a28cd201cb6d2ea88),
+and modified it for our purpose.  Summary of the main changes:
+
+- Bug fixes, e.g.
+  - disallow undeclared fields (were ignored)
+  - disallow missing fields (were getting empty values)
+  - enforce predefined type of domain fields (was allowing the user to define the types)
+  - several other cases where invalid messages were accepted
+- Structs are now immutable (which simplifies things), must be fully initialized on creation.
+- Removed support for default-domain
+- Removed ConsenSys-specific tests
+
+## Following is the original README
+
 A python interface for simple EIP-712 struct construction.
 
 In this module, a "struct" is structured data as defined in the standard.
@@ -100,7 +116,6 @@ import eip712_structs
 foo = SomeStruct()
 
 my_domain = eip712_structs.make_domain(name='hello world')
-eip712_structs.default_domain = my_domain
 
 assert foo.to_message() == foo.to_message(my_domain)
 assert foo.signable_bytes() == foo.signable_bytes(my_domain)

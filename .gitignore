@@ -4,5 +4,5 @@ dist/
 build/
 .pytest_cache/
 .coverage
-
-tests/contracts/build
+__pycache__/
+venv/
