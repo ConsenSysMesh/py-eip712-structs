@@ -162,7 +162,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
             :returns: This struct + the domain in dict form, structured as specified for EIP712 messages.
             """
         domain = self._assert_domain(domain)
-        structs = {domain, self}
+        structs = [domain, self]
         self._gather_reference_structs(structs)
 
         # Build type dictionary
