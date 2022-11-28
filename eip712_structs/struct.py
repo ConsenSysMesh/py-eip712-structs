@@ -84,6 +84,8 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         for k, v in self.values.items():
             if isinstance(v, EIP712Struct):
                 result[k] = v.data_dict()
+            elif isinstance(v, list) and len(v) and isinstance(v[0], EIP712Struct):
+                result[k] = [ e.data_dict() for e in v ]
             else:
                 result[k] = v
         return result
@@ -94,7 +96,7 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
         struct_sig = f'{cls.type_name}({",".join(member_sigs)})'
 
         if resolve_references:
-            reference_structs = set()
+            reference_structs = list()
             cls._gather_reference_structs(reference_structs)
             sorted_structs = sorted(list(s for s in reference_structs if s != cls), key=lambda s: s.type_name)
             for struct in sorted_structs:
