@@ -107,10 +107,16 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
     def _gather_reference_structs(cls, struct_set):
         """Finds reference structs defined in this struct type, and inserts them into the given set.
         """
-        structs = [m[1] for m in cls.get_members() if isinstance(m[1], type) and issubclass(m[1], EIP712Struct)]
+        structs = [
+            m[1] for m in cls.get_members() 
+            if isinstance(m[1], type) and issubclass(m[1], EIP712Struct)
+        ] + [
+            m[1].member_type for m in cls.get_members()
+            if isinstance(m[1], Array) and hasattr(m[1].member_type, "encode_type")
+        ]
         for struct in structs:
             if struct not in struct_set:
-                struct_set.add(struct)
+                struct_set.append(struct)
                 struct._gather_reference_structs(struct_set)
 
     @classmethod

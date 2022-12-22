@@ -64,7 +64,10 @@ class Array(EIP712Type):
     def _encode_value(self, value):
         """Arrays are encoded by concatenating their encoded contents, and taking the keccak256 hash."""
         encoder = self.member_type
-        encoded_values = [encoder.encode_value(v) for v in value]
+        if hasattr(encoder, "hash_struct"):
+            encoded_values = [v.hash_struct() for v in value]
+        else:
+            encoded_values = [encoder.encode_value(v) for v in value]
         return keccak(b''.join(encoded_values))
 
 
