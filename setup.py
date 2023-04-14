@@ -7,7 +7,7 @@ from setuptools.command.test import test as TestCommand
 
 
 NAME = 'eip712-structs'
-VERSION = '1.1.0'
+VERSION = '1001.1.0'
 
 install_requirements = [
     'eth-utils>=1.4.0',
@@ -70,6 +70,9 @@ setup(
     packages=find_packages(),
     install_requires=install_requirements,
     tests_require=test_requirements,
+    extras_require={
+        "test": test_requirements,
+    },
     cmdclass={
         "test": PyTest,
         "coveralls": CoverallsCommand,
