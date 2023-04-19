@@ -15,10 +15,10 @@ install_requirements = [
 ]
 
 test_requirements = [
-    'coveralls==1.8.0',
-    'pytest==4.6.2',
-    'pytest-cov==2.7.1',
-    'web3==4.9.2',
+    'coveralls>=1.8.0',
+    'pytest==6.2.5',
+    'pytest-cov==4.0.0',
+    'web3==5.31.3',
 ]
 
 
