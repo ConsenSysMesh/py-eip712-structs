@@ -90,6 +90,17 @@ class EIP712Struct(EIP712Type, metaclass=OrderedAttributesMeta):
                 result[k] = v
         return result
 
+    def as_function_args(self) -> Tuple:
+        result = list()
+        for v in self.values.values():
+            if isinstance(v, EIP712Struct):
+                result.append(v.as_function_args())
+            elif isinstance(v, list) and len(v) and isinstance(v[0], EIP712Struct):
+                result.append([e.as_function_args() for e in v])
+            else:
+                result.append(v)
+        return tuple(result)
+
     @classmethod
     def _encode_type(cls, resolve_references: bool) -> str:
         member_sigs = [f'{typ.type_name} {name}' for name, typ in cls.get_members()]
